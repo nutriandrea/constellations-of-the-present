@@ -78,7 +78,7 @@ function mixColors(target: THREE.Color, a: THREE.Color, b: THREE.Color, t: numbe
   return target
 }
 
-const STARFIELD_COUNT = 1200
+const STARFIELD_COUNT = 2600
 const STARFIELD_RADIUS = 55
 
 /**
@@ -135,31 +135,49 @@ function createBucketMaterials(): Map<EmotionBucket, THREE.SpriteMaterial> {
 }
 
 function createStarfield(): THREE.Points {
-  const { positions, sizes } = buildStarfield(STARFIELD_COUNT, STARFIELD_RADIUS, 20260808)
+  const { positions, sizes, tints } = buildStarfield(STARFIELD_COUNT, STARFIELD_RADIUS, 20260808)
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+  geometry.setAttribute('tint', new THREE.BufferAttribute(tints, 1))
   const material = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(0xaebbe8) } },
+    uniforms: {
+      uCold: { value: new THREE.Color(0x9fc4ff) },
+      uWarm: { value: new THREE.Color(0xffd2a1) },
+      uTime: { value: 0 },
+    },
     vertexShader: `
       attribute float size;
-      uniform vec3 uColor;
+      attribute float tint;
+      uniform vec3 uCold;
+      uniform vec3 uWarm;
+      uniform float uTime;
       varying float vAlpha;
+      varying vec3 vColor;
       void main() {
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_PointSize = size * (400.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
-        vAlpha = 0.5;
+        // depth haze: far stars sink into the void instead of all sitting flat
+        float depth = clamp((-mvPosition.z - 30.0) / 40.0, 0.0, 1.0);
+        // slow, non-harmonic scintillation, unique per star
+        float seed = tint * 43.0 + size * 17.0;
+        float tw = 0.82 + 0.18 * sin(uTime * 0.55 + seed) * sin(uTime * 0.23 + seed * 1.7);
+        vAlpha = mix(0.62, 0.16, depth) * tw * (0.55 + 0.45 * smoothstep(0.4, 1.6, size));
+        vColor = mix(uCold, uWarm, tint);
       }
     `,
     fragmentShader: `
-      uniform vec3 uColor;
       varying float vAlpha;
+      varying vec3 vColor;
       void main() {
         vec2 cxy = 2.0 * gl_PointCoord - 1.0;
         float r = dot(cxy, cxy);
         if (r > 1.0) discard;
-        gl_FragColor = vec4(uColor, (1.0 - r) * vAlpha);
+        // soft core + faint halo: points read as light, not as dots
+        float core = pow(1.0 - r, 2.2);
+        float halo = (1.0 - r) * 0.35;
+        gl_FragColor = vec4(vColor, (core + halo) * vAlpha);
       }
     `,
     transparent: true,
@@ -382,6 +400,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     update(now: number) {
       const dt = lastFrame === 0 ? 16 : Math.min(100, now - lastFrame)
       lastFrame = now
+
+      const starMat = starfield.material as THREE.ShaderMaterial
+      if (starMat.uniforms?.uTime) starMat.uniforms.uTime.value = reducedMotion ? 0 : now / 1000
 
       if (!reducedMotion) {
         // Seamless drift of the whole firmament. The yaw is a continuous
