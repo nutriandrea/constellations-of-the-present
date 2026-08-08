@@ -279,7 +279,7 @@ async function main(): Promise<void> {
   const ambient = createAmbientAudio({
     onStateChange(active) {
       soundToggle.setAttribute('aria-pressed', String(active))
-      soundToggle.textContent = active ? 'Mute ambient sound' : 'Enable ambient sound'
+      soundToggle.textContent = active ? 'sound on' : 'sound'
     },
   })
   soundToggle.hidden = false
