@@ -3,10 +3,10 @@ import { starSizeForDuration, flickerForConfidence, hueForEmotion, makeMomentHas
 import type { EmotionBucket } from '../sensing/expression'
 
 describe('starSizeForDuration', () => {
-  it('grows over time and caps at 1.8x base', () => {
+  it('grows over time and caps at 1.2x base', () => {
     expect(starSizeForDuration(0, 0.22)).toBeCloseTo(0.22)
     expect(starSizeForDuration(30_000, 0.22)).toBeGreaterThan(0.22)
-    expect(starSizeForDuration(90_000, 0.22)).toBeLessThan(0.22 * 1.9)
+    expect(starSizeForDuration(90_000, 0.22)).toBeLessThan(0.22 * 1.25)
   })
 })
 
