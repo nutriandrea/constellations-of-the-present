@@ -1,20 +1,26 @@
-/* Constellations of the Present — galaxy design system (in-experience UI) */
+/* Constellations of the Present — "OSSERVATORIO"
+   Void black, instrument grid, grotesque display type, single acid signal.
+   In-experience UI only. Sky rendering logic untouched. */
 
 :root {
   color-scheme: dark;
 
-  --font-heading: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-display: 'Bricolage Grotesque', 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --font-body: 'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --space-0: #030305;
-  --space-1: #070915;
+  --void: #000000;
+  --void-1: #05050a;
+  --paper: #f2f0e9;
+  --dim: rgba(242, 240, 233, 0.52);
+  --dimmer: rgba(242, 240, 233, 0.3);
+  --rule: rgba(242, 240, 233, 0.11);
+  --rule-soft: rgba(242, 240, 233, 0.055);
+  --signal: #ceff4d;
+
   --nebula-violet: #8b6cff;
   --nebula-cyan: #56d6f0;
   --nebula-rose: #ff7aa8;
-  --star: #eef1ff;
-  --dim: #8fa0d8;
-  --dimmer: #5f6ea0;
-  --line: rgba(238, 241, 255, 0.12);
 
   font-family: var(--font-body);
 }
@@ -26,12 +32,8 @@
 body {
   margin: 0;
   overflow: hidden;
-  background-color: var(--space-0);
-  background-image:
-    radial-gradient(ellipse 80% 60% at 20% 25%, rgba(139, 108, 255, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 55% at 82% 72%, rgba(86, 214, 240, 0.14) 0%, transparent 60%),
-    radial-gradient(ellipse 90% 70% at 50% 50%, rgba(255, 122, 168, 0.07) 0%, transparent 65%);
-  color: var(--star);
+  background-color: var(--void);
+  color: var(--paper);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
@@ -44,204 +46,330 @@ body {
   z-index: 0;
 }
 
-/* Vignette so the UI stays legible over the sky */
+/* --- instrument frame: hairline grid + registration marks over the sky --- */
+#app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
+  background-size: 12.5vw 12.5vw;
+  mask-image: radial-gradient(ellipse 75% 75% at center, rgba(0, 0, 0, 0.55), transparent 78%);
+  opacity: 0.85;
+}
+
+/* vignette + film grain so the UI stays legible and the void feels analog */
 #app::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(3, 3, 5, 0.65) 100%);
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.82) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.32'/%3E%3C/svg%3E");
+  mix-blend-mode: normal;
 }
 
-/* --- glass surface shared by overlays --- */
+/* --- corner registration crosses --- */
+.reg {
+  position: fixed;
+  z-index: 9;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.reg::before,
+.reg::after {
+  content: '';
+  position: absolute;
+  background: var(--paper);
+}
+
+.reg::before {
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+}
+
+.reg::after {
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+}
+
+.reg-tl { top: 22px; left: 22px; }
+.reg-tr { top: 22px; right: 22px; }
+.reg-bl { bottom: 22px; left: 22px; }
+.reg-br { bottom: 22px; right: 22px; }
+
+/* --- shared HUD type --- */
 #status-bar,
 #presence,
 #code,
 #sound-toggle,
 #about-link,
-#cam {
-  background: rgba(7, 9, 21, 0.55);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
-#cam {
-  position: fixed;
-  bottom: 16px;
-  right: 60px;
-  width: 148px;
-  border-radius: 14px;
-  transform: scaleX(-1);
-  z-index: 10;
-  opacity: 0.85;
-  box-shadow: 0 8px 40px rgba(3, 3, 5, 0.6);
-  transition: opacity 0.3s ease;
-}
-
-#cam:hover {
-  opacity: 1;
-}
-
+/* --- top-left telemetry stack --- */
 #status-bar {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 52px;
+  left: 52px;
   z-index: 10;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-family: var(--font-heading);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dim);
+  gap: 10px;
+  padding: 0 0 7px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--paper);
+  background: none;
 }
 
 #presence {
   position: fixed;
-  top: 58px;
-  left: 16px;
+  top: 82px;
+  left: 52px;
   z-index: 10;
-  padding: 6px 13px;
-  border-radius: 999px;
-  font-family: var(--font-heading);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--nebula-cyan);
+  padding: 0;
+  color: var(--dim);
+  background: none;
+  border: 0;
 }
 
 #conn {
   display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 8px;
-  border-radius: 50%;
-  font-size: 8px;
-  line-height: 7px;
-  text-align: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  font-size: 0;
   color: transparent;
-  background: #3a4160;
+  background: rgba(242, 240, 233, 0.25);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 #conn[data-state='connected'] {
-  background: var(--nebula-cyan);
-  box-shadow: 0 0 10px rgba(86, 214, 240, 0.9);
-  animation: pulse 2.4s ease-in-out infinite;
+  background: var(--signal);
+  box-shadow: 0 0 12px rgba(206, 255, 77, 0.85);
+  animation: pulse 2.6s ease-in-out infinite;
 }
 
 #conn[data-state='connecting'] {
   background: var(--nebula-violet);
-  box-shadow: 0 0 10px rgba(139, 108, 255, 0.8);
-  animation: pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(139, 108, 255, 0.8);
+  animation: pulse 1.1s ease-in-out infinite;
 }
 
 #conn[data-state='off'] {
-  background: #3a4160;
+  background: rgba(242, 240, 233, 0.22);
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  50% { opacity: 0.25; }
 }
 
+/* --- bottom-left: moment hash, treated as a specimen label --- */
 #code {
   position: fixed;
-  bottom: 16px;
-  left: 16px;
+  bottom: 52px;
+  left: 52px;
   z-index: 10;
-  padding: 6px 13px;
-  border-radius: 999px;
-  font-family: var(--font-heading);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--dimmer);
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--signal);
+  color: var(--dim);
+  background: none;
+  letter-spacing: 0.3em;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+#code::before {
+  content: 'moment-hash';
+  display: block;
+  color: var(--dimmer);
+  letter-spacing: 0.22em;
+  margin-bottom: 4px;
+}
+
+/* --- camera monitor: raw instrument feed, no rounded softness --- */
+#cam {
+  position: fixed;
+  bottom: 52px;
+  right: 52px;
+  width: 132px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  transform: scaleX(-1);
+  z-index: 10;
+  opacity: 0.55;
+  filter: grayscale(1) contrast(1.15);
+  background: var(--void-1);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+#cam:hover {
+  opacity: 0.95;
+  filter: grayscale(0.4) contrast(1.05);
+}
+
+/* --- centre-bottom action --- */
 #sound-toggle {
   position: fixed;
-  bottom: 20px;
+  bottom: 52px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  padding: 10px 22px;
-  border-radius: 999px;
-  border-color: rgba(139, 108, 255, 0.45);
-  color: var(--star);
-  font-family: var(--font-heading);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  padding: 11px 26px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  color: var(--paper);
   cursor: pointer;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease, letter-spacing 0.4s ease;
 }
 
 #sound-toggle:hover {
-  border-color: rgba(139, 108, 255, 0.85);
-  box-shadow: 0 0 32px rgba(139, 108, 255, 0.35);
-  transform: translateX(-50%) translateY(-1px);
+  border-color: var(--signal);
+  color: var(--signal);
+  letter-spacing: 0.3em;
+}
+
+#sound-toggle[aria-pressed='true'] {
+  border-color: var(--signal);
+  color: var(--void);
+  background: var(--signal);
 }
 
 #sound-toggle:focus-visible,
 #about-link:focus-visible {
-  outline: 2px solid var(--nebula-cyan);
-  outline-offset: 3px;
+  outline: 1px solid var(--signal);
+  outline-offset: 4px;
 }
 
-#sound-toggle[aria-pressed='true'] {
-  border-color: rgba(86, 214, 240, 0.8);
-  color: var(--nebula-cyan);
-  box-shadow: 0 0 32px rgba(86, 214, 240, 0.3);
-}
-
+/* --- top-right index link --- */
 #about-link {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  top: 52px;
+  right: 52px;
+  bottom: auto;
   z-index: 10;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  padding: 0 0 7px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: none;
   color: var(--dim);
-  font-family: var(--font-heading);
-  font-size: 13px;
   text-decoration: none;
-  transition: color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+#about-link::after {
+  content: '↗';
+  font-size: 11px;
 }
 
 #about-link:hover {
-  color: var(--star);
-  border-color: rgba(139, 108, 255, 0.7);
-  box-shadow: 0 0 24px rgba(139, 108, 255, 0.3);
+  color: var(--signal);
+  border-color: var(--signal);
+  box-shadow: none;
 }
 
-@media (max-width: 600px) {
-  #cam {
-    width: 88px;
-    bottom: 60px;
-    right: 12px;
-  }
+/* --- masthead: the work names itself, quietly, in display type --- */
+#masthead {
+  position: fixed;
+  left: 52px;
+  bottom: 120px;
+  z-index: 8;
+  pointer-events: none;
+  max-width: min(46vw, 620px);
+  mix-blend-mode: difference;
+}
 
-  #sound-toggle {
-    bottom: 14px;
-    font-size: 10px;
-    padding: 9px 16px;
+#masthead h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 5.4rem);
+  line-height: 0.86;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+#masthead h1 em {
+  display: block;
+  font-style: normal;
+  -webkit-text-stroke: 1px var(--paper);
+  color: transparent;
+}
+
+#masthead p {
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* --- right-edge vertical caption --- */
+#edge-caption {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%) rotate(180deg);
+  writing-mode: vertical-rl;
+  z-index: 9;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+}
+
+@media (max-width: 760px) {
+  .reg { display: none; }
+
+  #status-bar { top: 20px; left: 20px; }
+  #presence { top: 46px; left: 20px; }
+  #about-link { top: 20px; right: 20px; }
+  #code { bottom: 96px; left: 20px; max-width: 60vw; }
+  #sound-toggle { bottom: 24px; padding: 10px 18px; }
+  #cam { width: 84px; bottom: 96px; right: 20px; }
+  #edge-caption { display: none; }
+
+  #masthead {
+    left: 20px;
+    right: 20px;
+    bottom: 150px;
+    max-width: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #sky {
-    animation: none;
-  }
-
-  #conn {
-    animation: none !important;
-  }
+  #sky { animation: none; }
+  #conn { animation: none !important; }
+  #sound-toggle { transition: none; }
 }
