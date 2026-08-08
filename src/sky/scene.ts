@@ -1,17 +1,20 @@
 import * as THREE from 'three'
-import { EMOTION_COLORS, starSizeForDuration, flickerForConfidence } from './star'
+import { EMOTION_COLORS, starSizeForDuration } from './star'
 import type { StarState } from './star'
 import type { EmotionBucket } from '../sensing/expression'
 import type { TrackedStar } from './presence'
 import { REMOTE_TTL_MS } from './presence'
 import { hashToPosition } from './remotePosition'
 import { buildLines } from './connections'
+import { breathingFlicker } from './flicker'
+import { buildStarfield } from './starfield'
 
 export interface SkyHandles {
   update: (now: number) => void
   setStar: (star: StarState | null) => void
   setRemoteStars: (stars: TrackedStar[]) => void
   resize: (width: number, height: number) => void
+  setReducedMotion: (reduced: boolean) => void
 }
 
 const BUCKETS: EmotionBucket[] = ['joy', 'calm', 'sadness', 'anger', 'surprise', 'neutral']
@@ -19,25 +22,74 @@ const MAX_DIST = 2.5
 const MAX_NEIGHBORS = 4
 const MAX_LINES = 256
 
-interface StarPair {
-  star: THREE.Mesh
-  glow: THREE.Mesh
+const STARFIELD_COUNT = 1200
+const STARFIELD_RADIUS = 55
+
+interface StarSprite {
+  sprite: THREE.Sprite
 }
 
-function createBucketMaterials(): Map<EmotionBucket, { star: THREE.MeshBasicMaterial; glow: THREE.MeshBasicMaterial }> {
-  const materials = new Map<EmotionBucket, { star: THREE.MeshBasicMaterial; glow: THREE.MeshBasicMaterial }>()
+function createGlowTexture(): THREE.Texture {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  gradient.addColorStop(0, 'rgba(255,255,255,1)')
+  gradient.addColorStop(0.22, 'rgba(255,255,255,0.85)')
+  gradient.addColorStop(0.55, 'rgba(255,255,255,0.28)')
+  gradient.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, size, size)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  return texture
+}
+
+function createBucketMaterials(): Map<EmotionBucket, THREE.SpriteMaterial> {
+  const materials = new Map<EmotionBucket, THREE.SpriteMaterial>()
+  const texture = createGlowTexture()
   for (const bucket of BUCKETS) {
     const color = EMOTION_COLORS[bucket]
-    materials.set(bucket, {
-      star: new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35 }),
-      glow: new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.08 }),
-    })
+    materials.set(
+      bucket,
+      new THREE.SpriteMaterial({
+        map: texture,
+        color,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    )
   }
   return materials
 }
 
+function createStarfield(): THREE.Points {
+  const { positions, sizes } = buildStarfield(STARFIELD_COUNT, STARFIELD_RADIUS, 20260808)
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+  const material = new THREE.PointsMaterial({
+    color: 0xaebbe8,
+    size: 0.06,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+  })
+  return new THREE.Points(geometry, material)
+}
+
 export function createSky(canvas: HTMLCanvasElement): SkyHandles {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance',
+  })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
@@ -45,56 +97,57 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
   camera.position.set(0, 0, 5)
 
-  const starGeometry = new THREE.SphereGeometry(1, 24, 24)
-  const glowGeometry = new THREE.SphereGeometry(2.2, 24, 24)
   const bucketMaterials = createBucketMaterials()
+  const starfield = createStarfield()
+  scene.add(starfield)
 
-  // Own star
-  const ownMaterial = new THREE.MeshBasicMaterial({ color: 0xcfd8e3, transparent: true, opacity: 0.9 })
-  const ownGlowMaterial = new THREE.MeshBasicMaterial({ color: 0xcfd8e3, transparent: true, opacity: 0.12 })
-  const ownStar = new THREE.Mesh(starGeometry, ownMaterial)
-  const ownGlow = new THREE.Mesh(glowGeometry, ownGlowMaterial)
+  // Own star — dedicated material instance (bucket materials are shared with remotes)
+  const ownMaterial = bucketMaterials.get('neutral')!.clone()
+  const ownStar = new THREE.Sprite(ownMaterial)
+  ownStar.scale.setScalar(0.55)
   const ownRing = new THREE.Mesh(
-    new THREE.RingGeometry(1.5, 1.7, 48),
-    new THREE.MeshBasicMaterial({ color: 0x8fa0d8, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
+    new THREE.RingGeometry(1.5, 1.6, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0x8fa0d8,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
   )
-  ownStar.add(ownRing)
-  scene.add(ownStar, ownGlow)
+  scene.add(ownStar, ownRing)
 
   // Remote stars
-  const remoteMeshes = new Map<string, StarPair>()
-  const fading: { pair: StarPair; started: number }[] = []
-  const pool: StarPair[] = []
+  const remoteSprites = new Map<string, StarSprite>()
+  const fading: { sprite: StarSprite; started: number }[] = []
+  const pool: StarSprite[] = []
 
-  function acquirePair(): StarPair {
-    const pair = pool.pop()
-    if (pair) return pair
-    const star = new THREE.Mesh(starGeometry, new THREE.MeshBasicMaterial())
-    const glow = new THREE.Mesh(glowGeometry, new THREE.MeshBasicMaterial())
-    const created = { star, glow }
-    scene.add(star, glow)
+  function acquireSprite(): StarSprite {
+    const star = pool.pop()
+    if (star) return star
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
+    const created = { sprite }
+    scene.add(sprite)
     return created
   }
 
-  function releasePair(pair: StarPair): void {
-    pair.star.visible = false
-    pair.glow.visible = false
-    pool.push(pair)
+  function releaseSprite(star: StarSprite): void {
+    star.sprite.visible = false
+    pool.push(star)
   }
 
-  function applyBucket(pair: StarPair, bucket: EmotionBucket): void {
-    const mats = bucketMaterials.get(bucket)!
-    pair.star.material = mats.star
-    pair.glow.material = mats.glow
+  function applyBucket(star: StarSprite, bucket: EmotionBucket): void {
+    star.sprite.material = bucketMaterials.get(bucket)!
   }
 
   // Connections (buffers riusati, allocati una volta)
   const lineMaterial = new THREE.LineBasicMaterial({
-    color: 0x8fa0d8,
     vertexColors: true,
     transparent: true,
-    opacity: 0.18,
+    opacity: 0.9,
     blending: THREE.AdditiveBlending,
+    depthWrite: false,
   })
   const linePositions = new Float32Array(MAX_LINES * 6)
   const lineColors = new Float32Array(MAX_LINES * 6)
@@ -109,6 +162,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   let current: StarState | null = null
   let ownPosition = new THREE.Vector3(0, 0, 0)
   let remote: TrackedStar[] = []
+  let reducedMotion = false
   const positionCache = new Map<string, { x: number; y: number; z: number }>()
 
   function positionFor(hash: string): { x: number; y: number; z: number } {
@@ -120,6 +174,12 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     return pos
   }
 
+  function seedFor(hash: string): number {
+    let seed = 0
+    for (let i = 0; i < hash.length && i < 8; i++) seed += hash.charCodeAt(i) * (i + 1)
+    return seed || 1
+  }
+
   return {
     setStar(state: StarState | null) {
       current = state
@@ -127,72 +187,65 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         const pos = positionFor(state.hash)
         ownPosition.set(pos.x, pos.y, pos.z)
         ownStar.position.copy(ownPosition)
-        ownGlow.position.copy(ownPosition)
+        ownRing.position.copy(ownPosition)
         ownStar.visible = true
-        ownGlow.visible = true
+        ownRing.visible = true
       } else {
         ownStar.visible = false
-        ownGlow.visible = false
+        ownRing.visible = false
       }
     },
     setRemoteStars(stars: TrackedStar[]) {
       remote = stars
     },
+    setReducedMotion(reduced: boolean) {
+      reducedMotion = reduced
+    },
     update(now: number) {
+      starfield.rotation.y += 0.0001
+
       if (current) {
         const elapsed = now - current.birthTime
-        const size = starSizeForDuration(elapsed, 0.22)
-        const flicker = flickerForConfidence(current.confidence, 0.15)
-        const pulse = 1 + Math.sin(now / 220) * flicker
+        const size = starSizeForDuration(elapsed, 0.55)
+        const flicker = breathingFlicker(now, current.confidence, seedFor(current.hash), reducedMotion)
 
-        const color = EMOTION_COLORS[current.emotion]
-        ownMaterial.color.copy(color)
-        ownGlowMaterial.color.copy(color)
-        ownMaterial.opacity = Math.min(1, 0.5 + current.confidence)
-
-        ownStar.scale.setScalar(size * pulse)
-        ownGlow.scale.setScalar(size * 3.2 * pulse)
-        ownGlow.rotation.y += 0.004
-        ownRing.rotation.z += 0.002
+        ownMaterial.color.copy(EMOTION_COLORS[current.emotion])
+        ownMaterial.opacity = 0.75 + current.confidence * 0.25
+        ownStar.scale.setScalar(size * flicker)
+        ownRing.rotation.z += reducedMotion ? 0 : 0.002
       }
 
       const present = new Set<string>()
       for (const remoteStar of remote) {
         if (now - remoteStar.lastSeen > REMOTE_TTL_MS) continue
         present.add(remoteStar.hash)
-        let pair = remoteMeshes.get(remoteStar.hash)
-        if (!pair) {
-          pair = acquirePair()
-          applyBucket(pair, remoteStar.emotion)
+        let star = remoteSprites.get(remoteStar.hash)
+        if (!star) {
+          star = acquireSprite()
+          applyBucket(star, remoteStar.emotion)
           const pos = positionFor(remoteStar.hash)
-          pair.star.position.set(pos.x, pos.y, pos.z)
-          pair.glow.position.set(pos.x, pos.y, pos.z)
-          remoteMeshes.set(remoteStar.hash, pair)
+          star.sprite.position.set(pos.x, pos.y, pos.z)
+          remoteSprites.set(remoteStar.hash, star)
         }
-        const flicker = flickerForConfidence(remoteStar.confidence, 0.1)
-        const pulse = 1 + Math.sin(now / 240 + remoteStar.hash.charCodeAt(0)) * flicker
-        pair.star.scale.setScalar(0.12 * pulse)
-        pair.glow.scale.setScalar(0.12 * 3.2 * pulse)
-        pair.star.visible = true
-        pair.glow.visible = true
+        const flicker = breathingFlicker(now, remoteStar.confidence, seedFor(remoteStar.hash), reducedMotion)
+        star.sprite.scale.setScalar(0.5 * flicker)
+        star.sprite.visible = true
       }
 
-      for (const [hash, pair] of remoteMeshes) {
+      for (const [hash, star] of remoteSprites) {
         if (present.has(hash)) continue
-        remoteMeshes.delete(hash)
-        fading.push({ pair, started: now })
+        remoteSprites.delete(hash)
+        fading.push({ sprite: star, started: now })
       }
 
       for (let i = fading.length - 1; i >= 0; i--) {
-        const { pair, started } = fading[i]
+        const { sprite, started } = fading[i]
         const t = (now - started) / 500
         if (t >= 1) {
-          releasePair(pair)
+          releaseSprite(sprite)
           fading.splice(i, 1)
         } else {
-          const scale = Math.max(0.0001, 1 - t)
-          pair.star.scale.setScalar(0.12 * scale)
-          pair.glow.scale.setScalar(0.12 * 3.2 * scale)
+          sprite.sprite.scale.setScalar(Math.max(0.0001, 0.5 * (1 - t)))
         }
       }
 
@@ -217,13 +270,15 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           linePositions[o + 3] = line.bx
           linePositions[o + 4] = line.by
           linePositions[o + 5] = line.bz
-          const op = Math.max(0, Math.min(1, line.opacity))
-          lineColors[o] = op
-          lineColors[o + 1] = op
-          lineColors[o + 2] = op
-          lineColors[o + 3] = op
-          lineColors[o + 4] = op
-          lineColors[o + 5] = op
+          const color = EMOTION_COLORS['neutral']
+          const op = Math.max(0.05, Math.min(0.9, line.opacity))
+          lineColors[o] = color.r * op
+          lineColors[o + 1] = color.g * op
+          lineColors[o + 2] = color.b * op
+          const opB = op * 0.45
+          lineColors[o + 3] = color.r * opB
+          lineColors[o + 4] = color.g * opB
+          lineColors[o + 5] = color.b * opB
         }
         linePositionsAttribute.needsUpdate = true
         lineColorsAttribute.needsUpdate = true
