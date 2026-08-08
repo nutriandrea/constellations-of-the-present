@@ -16,12 +16,17 @@ describe('breathingFlicker', () => {
     }
   })
 
-  it('oscillates over time instead of being constant (not a glitch pulse)', () => {
-    const values = new Set<number>()
-    for (let t = 0; t <= 10_000; t += 500) {
-      values.add(Number(breathingFlicker(t, 0.3, 99).toFixed(4)))
+  it('breathes symmetrically around 1 (dims below and brightens above)', () => {
+    let min = Infinity
+    let max = -Infinity
+    for (let t = 0; t <= 30_000; t += 250) {
+      const v = breathingFlicker(t, 0.3, 99)
+      min = Math.min(min, v)
+      max = Math.max(max, v)
     }
-    expect(values.size).toBeGreaterThan(5)
+    expect(min).toBeLessThan(0.99)
+    expect(max).toBeGreaterThan(1.01)
+    expect(max - min).toBeGreaterThan(0.2)
   })
 
   it('flickers less at high confidence', () => {

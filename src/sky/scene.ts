@@ -72,12 +72,31 @@ function createStarfield(): THREE.Points {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
-  const material = new THREE.PointsMaterial({
-    color: 0xaebbe8,
-    size: 0.06,
-    sizeAttenuation: true,
+  const material = new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(0xaebbe8) } },
+    vertexShader: `
+      attribute float size;
+      uniform vec3 uColor;
+      varying float vAlpha;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (400.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+        vAlpha = 0.5;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      varying float vAlpha;
+      void main() {
+        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+        float r = dot(cxy, cxy);
+        if (r > 1.0) discard;
+        gl_FragColor = vec4(uColor, (1.0 - r) * vAlpha);
+      }
+    `,
     transparent: true,
-    opacity: 0.5,
+    blending: THREE.AdditiveBlending,
     depthWrite: false,
   })
   return new THREE.Points(geometry, material)
@@ -202,7 +221,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       reducedMotion = reduced
     },
     update(now: number) {
-      starfield.rotation.y += 0.0001
+      if (!reducedMotion) starfield.rotation.y += 0.0001
 
       if (current) {
         const elapsed = now - current.birthTime
@@ -270,6 +289,8 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           linePositions[o + 3] = line.bx
           linePositions[o + 4] = line.by
           linePositions[o + 5] = line.bz
+          // Linee in tinta neutra (scelta di design: fili di connessione discreti,
+          // non colorati dall'emozione dei capi). L'opacità segue la distanza.
           const color = EMOTION_COLORS['neutral']
           const op = Math.max(0.05, Math.min(0.9, line.opacity))
           lineColors[o] = color.r * op

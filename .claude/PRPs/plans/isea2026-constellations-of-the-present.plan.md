@@ -75,10 +75,20 @@ Status 2026-08-08: completed (Opzione C — schema+API pronti, wiring differito 
 
 **W3 acceptance**: retention solo seed+bucket anonimi, gated, mai nonce/code; senza credenziali app invariata; test+typecheck+build verdi.
 
-### W4 — Polish
+### W4 — Polish (DONE)
 1. Full sky scene: particle system, constellation lines, uncertainty flicker balance.
 2. Optional reactive ambient sound (mic opt-in).
 3. Mobile + accessibility; graceful camera-degraded mode (presence-only stars).
+
+Status 2026-08-08: completed. Render stelle riscritto: sprite con texture radiale + AdditiveBlending (bagliore reale, non più sfere-plastica); starfield di fondo deterministico (1200 punti, PRNG seedato → stesso cielo per tutti i client); flicker bi-phasico lento `breathingFlicker` (1.4s+4.7s, ampiezza ∝ confidenza invertita, ~1 con reduced-motion); connessioni con fade per vertice (opacità per distanza, estremo lontano dim); own star = sprite dedicato + anello orbitale (materiale clonato, non condiviso coi remote). Camera-degraded: se camera/modello AI non disponibili il cielo resta attivo (presence-only, nessun own star, status chiaro). Code-splitting: `await import('./sky/scene')` → three.js in chunk lazy separato (530KB vs bundle unico 672KB). Ramo stabile `paintStar` (solo aggiornamento colore live, niente re-publish/re-log per frame). Audio ambientale opt-in: pulsante → AudioContext → mic → AnalyserNode → RMS live → `mapLevelToGain` → drone morbido (3 oscillatori + lowpass), mai registrato (il segnale mic NON raggiunge gli speaker: analyser è sink di sola lettura). A11y: `role="img"`+aria-label canvas, aria-label video, pulsante accessibile con `aria-pressed`, `prefers-reduced-motion` (flicker statico + rotazione starfield disattivata). ESLint typescript-eslint flat config aggiunto (script `lint`). 62 Vitest tests (11 file). tsc + build + lint puliti.
+
+**Review W4 (code + security, range 1de88c5..199d578): 0 CRITICAL, 0 HIGH, fix integrati.**
+- Code review: 5/5 item verificati (1 PASS sprite material; 2 PARTIAL → `breathingFlicker` ora respira simmetricamente attorno a 1, range reale ~[0.62, 1.38] con doc+test allineati; 3 PASS determinismo/raggio, ma starfield passa a `ShaderMaterial` che consuma l'attributo `size` per-vertice — prima inerte con PointsMaterial; 4 PASS cleanup `stop()`; 5 PASS igiene/errori). Finding aggiuntivi risolti: M2 (rotazione starfield rispetta reduced-motion), L1 (guardia `starting` anti doppio avvio/parziale), L2 (duplicato `id="code"` → `code-value`), L3 (status degraded non sovrascritto), L4 (`.catch()` su `main()` + gestione `webglcontextlost/restored`), L5 (commento tinta neutra linee), L7 (commento mix clock `Date.now()`/`performance.now()`); L6 (allocazioni per frame in `buildLines`) accettato: O(n² log n) con n≤61, informativo.
+- Security: 0C/0H/3M/4L. M1 (mic instradato agli speaker: rimosso `analyser.connect(gainNode)`), M2 (leak stream su errore parziale `start()`: try/catch con stop tracks + close ctx + rethrow), M3 (nessuna CSP: aggiunta CSP via meta in build produzione, `vite.config.ts` plugin `inject-csp` — script-src `'self' 'wasm-unsafe-eval'` per MediaPipe; niente inline handlers). L1/L2/L3 risolti come sopra (duplicato id, double-start, camera non fermata su degraded/unload → `stopCamera` in `face.ts` + `beforeunload`). L4 (shape stelle remote non validata): `isValidRemoteStar` in `channel.ts` (regexp hex64 + whitelist emotion + range confidence) applicata a emit presence e broadcast onmessage.
+- XSS/Injection: nessun rischio (tutti `textContent`, zero innerHTML/eval).
+- Rischi residui accettati (riportati da security review): nessun rate-limit per-IP su `log_star` (budget globale 20/5s, deferito a Edge Function), reversibilità seed per enumerazione (già documentata in W3), `npm audit` da eseguire prima del deploy.
+
+**W4 acceptance**: polished mobile-friendly sky.
 
 ### W5 — Submission
 1. Concept statement (≤250w), bio (≤75w) + institution, portfolio page.
@@ -103,6 +113,6 @@ Status 2026-08-08: completed (Opzione C — schema+API pronti, wiring differito 
 - W5: submission package + URL + organizer confirmation.
 
 ## Deviations
-- No ESLint configured (not installed at scaffold); lint validation deferred → add in W4 polish or remove from checklist.
-- three.js bundle 672 KB min / 176 KB gzip triggers Vite chunk-size warning; accepted for W1, plan code-splitting (dynamic import) in W4.
-- `src/geo/geo.ts` uses coarse `lat,lon` only (1 decimal), displayed in status text; revisit in W4 for sky-projection semantics.
+- ESLint: configured in W4 (typescript-eslint flat config, `npm run lint`), deviazione chiusa.
+- three.js bundle: code-splitting in W4 (`await import('./sky/scene')`) → chunk lazy separato `scene-*.js` (~530KB min, ~133KB gzip) caricato solo quando il cielo parte; il chunk rimane >500KB → warning Vite residuo accettato (chunk lazy, non critico per il primo paint). Deviazione chiusa.
+- `src/geo/geo.ts` usa `lat,lon` coarse a 1 decimale per l'etichetta di luogo nello status. **Decisione W4 documentata**: la posizione della stella resta guidata dal moment-hash (identità del momento, non luogo) — l'arte mappa "place" come luogo di osservazione (etichetta), non come coordinata visiva; il cielo resta una costellazione di momenti. Nessun cambio proiezione. Deviazione chiusa con decisione.

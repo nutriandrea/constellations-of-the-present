@@ -1,6 +1,6 @@
 import './style.css'
 import type { FaceLandmarker } from '@mediapipe/tasks-vision'
-import { initFaceLandmarker, detectFace, landmarksFromResult, requestCamera } from './sensing/face'
+import { initFaceLandmarker, detectFace, landmarksFromResult, requestCamera, stopCamera } from './sensing/face'
 import { readExpression, type ExpressionReading } from './sensing/expression'
 import { makeMomentHash } from './moment/hash'
 import { requestCoarseGeo } from './geo/geo'
@@ -16,7 +16,7 @@ const statusEl = document.getElementById('status') as HTMLDivElement
 const presenceEl = document.getElementById('presence') as HTMLDivElement
 const connEl = document.getElementById('conn') as HTMLDivElement
 const video = document.getElementById('cam') as HTMLVideoElement
-const codeEl = document.getElementById('code') as HTMLSpanElement
+const codeEl = document.getElementById('code-value') as HTMLSpanElement
 const soundToggle = document.getElementById('sound-toggle') as HTMLButtonElement
 
 function setStatus(text: string): void {
@@ -37,16 +37,35 @@ const PUBLISH_INTERVAL_MS = 5_000
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
 async function main(): Promise<void> {
-  // Code-splitting: three.js carica in un chunk separato.
-  const sky: SkyHandles = (await import('./sky/scene')).createSky(canvas)
+  let sky: SkyHandles | null = null
+  try {
+    // Code-splitting: three.js carica in un chunk separato.
+    sky = (await import('./sky/scene')).createSky(canvas)
+  } catch {
+    setStatus('Grafica 3D non disponibile.')
+    return
+  }
   sky.setReducedMotion(reducedMotionQuery.matches)
-  reducedMotionQuery.addEventListener('change', (event) => sky.setReducedMotion(event.matches))
+  reducedMotionQuery.addEventListener('change', (event) => sky?.setReducedMotion(event.matches))
+
+  canvas.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault()
+    setStatus('Contesto grafico perso — in ripristino…')
+  })
+  canvas.addEventListener('webglcontextrestored', () => {
+    if (geo?.coarse === 'unknown' || !landmarker) {
+      setStatus(landmarker ? 'Cielo aperto.' : 'Camera o modello AI non disponibili — cielo in modalità presenza.')
+    } else {
+      setStatus(`Stella da ${geo.coarse} — cielo aperto.`)
+    }
+  })
 
   let landmarker: FaceLandmarker | null = null
   try {
     await requestCamera(video)
     landmarker = await initFaceLandmarker()
   } catch {
+    stopCamera(video)
     setStatus('Camera o modello AI non disponibili — cielo in modalità presenza.')
   }
 
@@ -72,7 +91,7 @@ async function main(): Promise<void> {
     channel.onStars((stars) => {
       setConnection('connected')
       for (const star of stars) registry.apply(star, performance.now())
-      sky.setRemoteStars(registry.list())
+      sky?.setRemoteStars(registry.list())
       setPresence(registry.size())
     })
   }
@@ -88,7 +107,7 @@ async function main(): Promise<void> {
   const pruneTimer = window.setInterval(() => {
     const removed = prune(registry, performance.now(), REMOTE_TTL_MS)
     if (removed.length > 0) {
-      sky.setRemoteStars(registry.list())
+      sky?.setRemoteStars(registry.list())
       setPresence(registry.size())
     }
   }, 2_000)
@@ -114,7 +133,7 @@ async function main(): Promise<void> {
   // Aggiorna il colore/luminosità live; senza re-publish/re-log (solo a cambio di key).
   function paintStar(reading: ExpressionReading): void {
     if (!currentMoment) return
-    sky.setStar({
+    sky?.setStar({
       emotion: reading.emotion,
       confidence: reading.confidence,
       birthTime,
@@ -125,7 +144,7 @@ async function main(): Promise<void> {
   function applyMoment(moment: { code: string; seed: string }, reading: ExpressionReading, now: number): void {
     const code = moment.code
     currentMoment = moment
-    sky.setStar({
+    sky?.setStar({
       emotion: reading.emotion,
       confidence: reading.confidence,
       birthTime,
@@ -138,6 +157,7 @@ async function main(): Promise<void> {
         hash: code,
         emotion: reading.emotion,
         confidence: Math.round(reading.confidence * 100) / 100,
+        // Date.now() (clock reale) per i peer; l'animazione locale usa performance.now().
         birthTime: Date.now(),
       },
       now,
@@ -161,18 +181,17 @@ async function main(): Promise<void> {
         paintStar(reading)
       }
     }
-    sky.update(now)
+    sky?.update(now)
     requestAnimationFrame(frame)
   }
 
-  if (geo.coarse === 'unknown') {
-    setStatus('Cielo aperto.')
-  } else if (landmarker) {
-    setStatus(`Stella da ${geo.coarse} — cielo aperto.`)
+  if (landmarker) {
+    setStatus(geo.coarse === 'unknown' ? 'Cielo aperto.' : `Stella da ${geo.coarse} — cielo aperto.`)
   }
+  // Se degraded (landmarker null), mantiene il messaggio "Camera o modello AI…" già mostrato.
   requestAnimationFrame(frame)
 
-  window.addEventListener('resize', () => sky.resize(window.innerWidth, window.innerHeight))
+  window.addEventListener('resize', () => sky?.resize(window.innerWidth, window.innerHeight))
 
   const ambient = createAmbientAudio({
     onStateChange(active) {
@@ -194,9 +213,13 @@ async function main(): Promise<void> {
   window.addEventListener('beforeunload', () => {
     window.clearInterval(pruneTimer)
     ambient.stop()
+    stopCamera(video)
     channel.dispose()
     sink.dispose()
   })
 }
 
-void main()
+void main().catch((error) => {
+  console.error('Avvio fallito:', error)
+  setStatus('Impossibile avviare il cielo.')
+})

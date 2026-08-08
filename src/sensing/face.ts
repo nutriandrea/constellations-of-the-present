@@ -40,3 +40,11 @@ export async function requestCamera(video: HTMLVideoElement): Promise<void> {
   video.srcObject = stream
   await video.play()
 }
+
+export function stopCamera(video: HTMLVideoElement): void {
+  const stream = video.srcObject
+  if (stream instanceof MediaStream) {
+    stream.getTracks().forEach((track) => track.stop())
+  }
+  video.srcObject = null
+}
