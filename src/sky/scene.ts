@@ -13,6 +13,8 @@ import { buildLines } from './connections'
 import { createLinkAnimator } from './constellation'
 import { arcPoint, drawReveal, keySeed, pulse, pulsePhase, taper } from './arc'
 import { twinkle } from './twinkle'
+import { linkContrast } from './linkContrast'
+import type { Ambient } from './linkContrast'
 import { buildStarfield } from './starfield'
 
 export interface SkyHandles {
@@ -21,6 +23,8 @@ export interface SkyHandles {
   setRemoteStars: (stars: TrackedStar[]) => void
   resize: (width: number, height: number) => void
   setReducedMotion: (reduced: boolean) => void
+  /** Ambiente percepito dello schermo: alza il contrasto dei fili sul chiaro. */
+  setAmbient: (ambient: Ambient) => void
 }
 
 const BUCKETS: EmotionBucket[] = ['joy', 'calm', 'sadness', 'anger', 'surprise', 'neutral']
@@ -250,6 +254,18 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const ownPosition = new THREE.Vector3(0, 0, 0)
   let remote: TrackedStar[] = []
   let reducedMotion = false
+  // Su tema chiaro (o schermo molto luminoso) i fili additivi svaniscono:
+  // la curva di contrasto li rinforza.
+  let ambient: Ambient =
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark'
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    const query = window.matchMedia('(prefers-color-scheme: light)')
+    query.addEventListener?.('change', (event) => {
+      ambient = event.matches ? 'light' : 'dark'
+    })
+  }
   let lastFrame = 0
   let lastTopology = 0
   const positionCache = new Map<string, { x: number; y: number; z: number }>()
@@ -296,6 +312,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     },
     setReducedMotion(reduced: boolean) {
       reducedMotion = reduced
+    },
+    setAmbient(next: Ambient) {
+      ambient = next
     },
     update(now: number) {
       const dt = lastFrame === 0 ? 16 : Math.min(100, now - lastFrame)
@@ -389,8 +408,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           const seed = keySeed(key)
           const phase = reducedMotion ? -1 : pulsePhase(now, seed)
 
-          // Intensità di base del legame: distanza + presenza del filo.
-          const base = Math.max(0.05, Math.min(1, line.opacity)) * LINK_GAIN
+          // Intensità di base del legame: distanza + presenza del filo,
+          // rimappata dalla curva adattiva (ambiente + affollamento del cielo).
+          const base = linkContrast(line.opacity * LINK_GAIN, ambient, count / MAX_LINES)
           const ca = tintFor(line.a, linkColorA)
           const cb = tintFor(line.b, linkColorB)
 
