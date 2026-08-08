@@ -3,12 +3,12 @@ import { FaceLandmarker } from '@mediapipe/tasks-vision'
 import { initFaceLandmarker, detectFace, landmarksFromResult, requestCamera } from './sensing/face'
 import { readExpression, type ExpressionReading } from './sensing/expression'
 import { makeMomentHash } from './moment/hash'
-import { createSky } from './sky/scene'
 import { requestCoarseGeo } from './geo/geo'
 import { createStarChannel } from './net/channel'
 import { createStarRegistry, prune, REMOTE_TTL_MS } from './sky/presence'
 import { createRetentionSink, createRetentionGate } from './retention/retention'
 import type { RemoteStar } from './net/StarChannel'
+import type { SkyHandles } from './sky/scene'
 
 const canvas = document.getElementById('sky') as HTMLCanvasElement
 const statusEl = document.getElementById('status') as HTMLDivElement
@@ -16,8 +16,6 @@ const presenceEl = document.getElementById('presence') as HTMLDivElement
 const connEl = document.getElementById('conn') as HTMLDivElement
 const video = document.getElementById('cam') as HTMLVideoElement
 const codeEl = document.getElementById('code') as HTMLSpanElement
-
-const sky = createSky(canvas)
 
 function setStatus(text: string): void {
   statusEl.textContent = text
@@ -34,22 +32,21 @@ function setConnection(state: 'connecting' | 'connected' | 'off'): void {
 
 const PUBLISH_INTERVAL_MS = 5_000
 
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+
 async function main(): Promise<void> {
-  try {
-    await requestCamera(video)
-  } catch {
-    setStatus('Camera non disponibile — stella a bassa confidenza.')
-  }
+  // Code-splitting: three.js carica in un chunk separato.
+  const sky: SkyHandles = (await import('./sky/scene')).createSky(canvas)
+  sky.setReducedMotion(reducedMotionQuery.matches)
+  reducedMotionQuery.addEventListener('change', (event) => sky.setReducedMotion(event.matches))
 
   let landmarker: FaceLandmarker | null = null
   try {
+    await requestCamera(video)
     landmarker = await initFaceLandmarker()
   } catch {
-    setStatus('Modello AI non caricato.')
-    return
+    setStatus('Camera o modello AI non disponibili — cielo in modalità presenza.')
   }
-  if (!landmarker) return
-  const lm = landmarker
 
   const geo = await requestCoarseGeo()
   const birthTime = performance.now()
@@ -112,6 +109,17 @@ async function main(): Promise<void> {
     })
   }
 
+  // Aggiorna il colore/luminosità live; senza re-publish/re-log (solo a cambio di key).
+  function paintStar(reading: ExpressionReading): void {
+    if (!currentMoment) return
+    sky.setStar({
+      emotion: reading.emotion,
+      confidence: reading.confidence,
+      birthTime,
+      hash: currentMoment.code,
+    })
+  }
+
   function applyMoment(moment: { code: string; seed: string }, reading: ExpressionReading, now: number): void {
     const code = moment.code
     currentMoment = moment
@@ -136,25 +144,33 @@ async function main(): Promise<void> {
   }
 
   function frame(now: number): void {
-    const result = landmarksFromResult(detectFace(lm, video, now))
-    const reading = result ? readExpression(result) : { emotion: 'neutral' as const, confidence: 0.2 }
-    const key = `${reading.emotion}:${Math.round(reading.confidence * 4) / 4}`
-    if (key !== lastStateKey) {
-      lastStateKey = key
-      const seq = ++momentSeq
-      void makeMomentHash(reading.emotion, reading.confidence, null, now - birthTime).then((moment) => {
-        if (seq !== momentSeq) return
-        applyMoment(moment, reading, now)
-      })
-    } else if (currentMoment) {
-      applyMoment(currentMoment, reading, now)
+    if (landmarker) {
+      const result = landmarksFromResult(detectFace(landmarker, video, now))
+      const reading = result ? readExpression(result) : { emotion: 'neutral' as const, confidence: 0.2 }
+      const key = `${reading.emotion}:${Math.round(reading.confidence * 4) / 4}`
+      if (key !== lastStateKey) {
+        lastStateKey = key
+        const seq = ++momentSeq
+        void makeMomentHash(reading.emotion, reading.confidence, null, now - birthTime).then((moment) => {
+          if (seq !== momentSeq) return
+          applyMoment(moment, reading, now)
+        })
+      } else if (currentMoment) {
+        paintStar(reading)
+      }
     }
     sky.update(now)
     requestAnimationFrame(frame)
   }
 
-  setStatus(geo.coarse === 'unknown' ? 'Cielo aperto.' : `Stella da ${geo.coarse} — cielo aperto.`)
+  if (geo.coarse === 'unknown') {
+    setStatus('Cielo aperto.')
+  } else if (landmarker) {
+    setStatus(`Stella da ${geo.coarse} — cielo aperto.`)
+  }
   requestAnimationFrame(frame)
+
+  window.addEventListener('resize', () => sky.resize(window.innerWidth, window.innerHeight))
 
   window.addEventListener('beforeunload', () => {
     window.clearInterval(pruneTimer)
@@ -162,7 +178,5 @@ async function main(): Promise<void> {
     sink.dispose()
   })
 }
-
-window.addEventListener('resize', () => sky.resize(window.innerWidth, window.innerHeight))
 
 void main()
