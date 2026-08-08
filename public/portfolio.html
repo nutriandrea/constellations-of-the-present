@@ -5,79 +5,244 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Constellations of the Present — an interactive web artwork. A shared sky built from anonymous moment-hashes. Privacy-by-design." />
+    <meta name="theme-color" content="#030305" />
     <meta property="og:title" content="Constellations of the Present" />
     <meta property="og:description" content="A collective sky without capture. Every visitor becomes a star — nothing raw ever leaves the device." />
     <meta property="og:type" content="website" />
-    <title>Constellations of the Present — Portfolio</title>
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Constellations of the Present — Interactive Web Artwork</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         color-scheme: dark;
-        font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+        --font-heading: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --font-body: 'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        --space-0: #030305;
+        --nebula-violet: #8b6cff;
+        --nebula-cyan: #56d6f0;
+        --nebula-rose: #ff7aa8;
+        --star: #eef1ff;
+        --dim: #9aa7d4;
+        --dimmer: #6c7bb3;
+        --line: rgba(238, 241, 255, 0.1);
       }
+
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
+
       body {
         margin: 0;
-        background: radial-gradient(ellipse at 50% 0%, #0b1030 0%, #05070f 70%);
-        color: #dfe6ff;
-        line-height: 1.7;
+        background-color: var(--space-0);
+        color: var(--star);
+        font-family: var(--font-body);
+        font-weight: 300;
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
       }
-      header {
-        padding: 8rem 1.5rem 4rem;
-        text-align: center;
-        border-bottom: 1px solid rgba(223, 230, 255, 0.08);
+
+      /* Nebula field */
+      .nebula {
+        pointer-events: none;
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background-image:
+          radial-gradient(ellipse 70% 50% at 18% 12%, rgba(139, 108, 255, 0.28) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 45% at 84% 38%, rgba(86, 214, 240, 0.2) 0%, transparent 60%),
+          radial-gradient(ellipse 80% 55% at 40% 82%, rgba(255, 122, 168, 0.14) 0%, transparent 62%);
       }
+
+      /* Starfield */
       .stars {
         pointer-events: none;
         position: fixed;
         inset: 0;
+        z-index: -1;
+        opacity: 0.5;
+        background-repeat: repeat;
+        background-size: 420px 320px;
         background-image:
-          radial-gradient(1px 1px at 20% 30%, rgba(223,230,255,0.8) 0, transparent 100%),
-          radial-gradient(1px 1px at 70% 20%, rgba(143,160,216,0.7) 0, transparent 100%),
-          radial-gradient(1.5px 1.5px at 40% 60%, rgba(223,230,255,0.6) 0, transparent 100%),
-          radial-gradient(1px 1px at 85% 70%, rgba(143,160,216,0.6) 0, transparent 100%),
-          radial-gradient(1px 1px at 10% 80%, rgba(223,230,255,0.5) 0, transparent 100%);
+          radial-gradient(1.6px 1.6px at 24px 38px, #ffffff, transparent),
+          radial-gradient(1px 1px at 108px 92px, rgba(238,241,255,0.9), transparent),
+          radial-gradient(1.4px 1.4px at 186px 26px, var(--nebula-violet), transparent),
+          radial-gradient(1px 1px at 244px 148px, rgba(238,241,255,0.75), transparent),
+          radial-gradient(1.6px 1.6px at 312px 66px, var(--nebula-cyan), transparent),
+          radial-gradient(1px 1px at 372px 212px, rgba(238,241,255,0.7), transparent),
+          radial-gradient(1.3px 1.3px at 64px 240px, var(--nebula-rose), transparent),
+          radial-gradient(1px 1px at 288px 296px, rgba(238,241,255,0.6), transparent);
+        animation: drift 220s linear infinite;
       }
-      main { position: relative; max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
-      h1 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: 0.02em; margin: 0; }
-      h2 { font-size: 1.1rem; letter-spacing: 0.08em; color: #aebbe8; margin-top: 3.5rem; }
-      p { color: #dfe6ff; }
-      .lede { color: #8fa0d8; max-width: 560px; margin: 1.5rem auto 0; font-size: 0.95rem; }
+
+      @keyframes drift {
+        from { background-position: 0 0; }
+        to { background-position: 420px 320px; }
+      }
+
+      header {
+        position: relative;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 6rem 1.5rem 4rem;
+      }
+
+      .eyebrow {
+        font-family: var(--font-heading);
+        font-size: 0.7rem;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+        margin: 0 0 2rem;
+      }
+
+      h1 {
+        font-family: var(--font-heading);
+        font-weight: 500;
+        font-size: clamp(2.2rem, 7vw, 4.6rem);
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+        margin: 0;
+        text-shadow: 0 0 60px rgba(139, 108, 255, 0.45);
+      }
+
+      .lede {
+        color: var(--dim);
+        max-width: 46ch;
+        margin: 2rem auto 0;
+        font-size: clamp(0.98rem, 1.6vw, 1.12rem);
+      }
+
       .launch {
         display: inline-block;
-        margin-top: 2.5rem;
-        padding: 0.8rem 1.8rem;
-        border: 1px solid rgba(143, 160, 216, 0.6);
+        margin-top: 3rem;
+        padding: 0.95rem 2.2rem;
+        border: 1px solid rgba(139, 108, 255, 0.5);
         border-radius: 999px;
-        color: #dfe6ff;
+        background: rgba(139, 108, 255, 0.08);
+        color: var(--star);
         text-decoration: none;
-        letter-spacing: 0.06em;
-        font-size: 0.9rem;
-        transition: background 0.25s, color 0.25s;
+        font-family: var(--font-heading);
+        font-size: 0.78rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        backdrop-filter: blur(10px);
+        transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
       }
-      .launch:hover { background: rgba(143, 160, 216, 0.15); }
-      .meta { margin-top: 2rem; font-size: 0.8rem; color: #6c7bb3; letter-spacing: 0.05em; }
-      a { color: #aebbe8; }
+
+      .launch:hover {
+        background: rgba(139, 108, 255, 0.18);
+        border-color: rgba(139, 108, 255, 0.9);
+        box-shadow: 0 0 50px rgba(139, 108, 255, 0.35);
+        transform: translateY(-2px);
+      }
+
+      .meta {
+        margin-top: 3.5rem;
+        font-family: var(--font-heading);
+        font-size: 0.68rem;
+        color: var(--dimmer);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      main {
+        position: relative;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 6rem;
+      }
+
+      section {
+        margin: 0 0 1.75rem;
+        padding: 2.4rem clamp(1.4rem, 4vw, 2.6rem);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(7, 9, 21, 0.55);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        transition: border-color 0.35s ease, box-shadow 0.35s ease;
+      }
+
+      section:hover { border-color: rgba(139, 108, 255, 0.35); box-shadow: 0 0 60px rgba(139, 108, 255, 0.12); }
+      section:nth-of-type(2):hover { border-color: rgba(86, 214, 240, 0.35); box-shadow: 0 0 60px rgba(86, 214, 240, 0.12); }
+      section:nth-of-type(3):hover { border-color: rgba(255, 122, 168, 0.32); box-shadow: 0 0 60px rgba(255, 122, 168, 0.1); }
+
+      h2 {
+        font-family: var(--font-heading);
+        font-weight: 500;
+        font-size: 0.78rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--nebula-violet);
+        margin: 0 0 1.4rem;
+      }
+
+      section:nth-of-type(2) h2 { color: var(--nebula-cyan); }
+      section:nth-of-type(3) h2 { color: var(--nebula-rose); }
+
+      p { color: var(--dim); margin: 0 0 1.15rem; }
+      p:last-child { margin-bottom: 0; }
+      em { color: var(--star); font-style: italic; }
+      a { color: var(--nebula-cyan); }
+
+      .pills { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.6rem; }
+
       .pill {
         display: inline-block;
-        margin: 0 0.35rem 0.35rem 0;
-        padding: 0.2rem 0.7rem;
-        border: 1px solid rgba(143, 160, 216, 0.35);
+        padding: 0.3rem 0.85rem;
+        border: 1px solid var(--line);
         border-radius: 999px;
-        font-size: 0.75rem;
-        color: #aebbe8;
+        background: rgba(238, 241, 255, 0.04);
+        font-family: var(--font-heading);
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+        color: var(--dim);
       }
-      footer { text-align: center; padding: 3rem 1.5rem; font-size: 0.75rem; color: #6c7bb3; border-top: 1px solid rgba(223, 230, 255, 0.08); }
+
+      footer {
+        position: relative;
+        text-align: center;
+        padding: 4rem 1.5rem 5rem;
+        font-size: 0.8rem;
+        color: var(--dimmer);
+        border-top: 1px solid var(--line);
+      }
+
+      footer a {
+        display: inline-block;
+        margin-top: 1.2rem;
+        font-family: var(--font-heading);
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .stars { animation: none; }
+        html { scroll-behavior: auto; }
+      }
     </style>
   </head>
   <body>
+    <div class="nebula" aria-hidden="true"></div>
     <div class="stars" aria-hidden="true"></div>
+
     <header>
+      <p class="eyebrow">Interactive web artwork · 2026</p>
       <h1>Constellations<br />of the Present</h1>
       <p class="lede">A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever leaves the device.</p>
       <a class="launch" href="/" rel="nofollow">Enter the sky</a>
-      <p class="meta">Andrea Cacioppo · Politecnico di Milano · 2026 · Interactive web artwork</p>
+      <p class="meta">Andrea Cacioppo · Politecnico di Milano</p>
     </header>
+
     <main>
       <section aria-label="Concept">
         <h2>Concept</h2>
@@ -85,21 +250,27 @@
         <p>Each visitor's presence is sensed entirely on their own device. The camera reads expression, attention, and engagement in real time; the reading is quantized and immediately reduced to a non-reversible hash — a "moment-hash" — seeded with a random nonce. Only this anonymous code leaves the device, where it places a star in a constellation shared by everyone looking up at the same moment.</p>
         <p>Stars flicker with the uncertainty of the moment that created them, grow while that moment is held, and fade when the person looks away. Connection lines form only between people present in the same instant — a web of the now.</p>
       </section>
+
       <section aria-label="Privacy">
         <h2>A Sky Without Capture</h2>
         <p>Nothing raw is ever transmitted, stored, or logged in any form that could identify a person. The microphone — strictly opt-in — feeds only a live audio level into an ambient drone; it never records, never transmits a signal, and never leaves the browser. Face tracking runs entirely on-device and is discarded frame by frame.</p>
         <p>The artwork is a working proof of its own thesis: that a collective can be built without capturing anyone.</p>
       </section>
+
       <section aria-label="Technical">
         <h2>Technical</h2>
-        <p><span class="pill">Vite + TypeScript</span><span class="pill">Three.js (WebGL)</span><span class="pill">MediaPipe Face Landmarker (on-device)</span><span class="pill">Web Crypto SHA-256</span><span class="pill">BroadcastChannel / WebSocket</span><span class="pill">Privacy-by-design</span></p>
+        <div class="pills">
+          <span class="pill">Vite + TypeScript</span><span class="pill">Three.js (WebGL)</span><span class="pill">MediaPipe Face Landmarker</span><span class="pill">Web Crypto SHA-256</span><span class="pill">BroadcastChannel / WebSocket</span><span class="pill">Privacy-by-design</span>
+        </div>
         <p>Face geometry is analyzed locally to derive an expression bucket and engagement estimate. These quantized values, together with a random nonce, are hashed into an anonymous seed that determines the star's position and identity. No audio or video data ever leaves the device.</p>
       </section>
+
       <section aria-label="About">
         <h2>Artist</h2>
         <p>Andrea Cacioppo is an Italian designer and creative developer based in Milan, currently studying at Politecnico di Milano. His practice sits at the intersection of interaction design, creative code, and privacy-by-design, exploring how networked systems can create intimacy and collectivity without surveillance. His works are meant to be experienced live, in the present tense, leaving nothing behind.</p>
       </section>
     </main>
+
     <footer>
       Constellations of the Present — an artwork about being together in the now, without being captured.<br />
       <a href="/">Open the artwork</a>
