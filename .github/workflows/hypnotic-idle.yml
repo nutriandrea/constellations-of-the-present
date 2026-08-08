@@ -1,0 +1,53 @@
+name: hypnotic-idle
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/isea2026-constellations
+      - run: |
+          python3 - <<'PY'
+          p='src/main.ts'; s=open(p).read()
+          s=s.replace("const IDLE_AFTER_MS = 4_000","const IDLE_AFTER_MS = 1_000")
+          open(p,'w').write(s)
+          p='src/style.css'; s=open(p).read()
+          s=s.replace("""body[data-idle='true'] #code {
+            opacity: 0.35;
+          }""".replace('\n          ','\n'),"""body[data-idle='true'] #code {
+            opacity: 0;
+          }
+
+          /* once the interface is gone the void itself breathes: slow, hypnotic */
+          body[data-idle='true'] #app::after {
+            animation: void-breathe 26s ease-in-out infinite;
+          }
+
+          @keyframes void-breathe {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.82; transform: scale(1.035); }
+          }
+
+          body[data-idle='true'] #sky {
+            animation: sky-drift 40s ease-in-out infinite;
+          }
+
+          @keyframes sky-drift {
+            0%, 100% { filter: saturate(1) brightness(1); }
+            50% { filter: saturate(1.14) brightness(1.06); }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            body[data-idle='true'] #app::after,
+            body[data-idle='true'] #sky { animation: none; }
+          }""".replace('\n          ','\n'))
+          open(p,'w').write(s)
+          PY
+          rm -f .github/workflows/hypnotic-idle.yml
+          git config user.name "lovable-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git commit -am "feat: interface dissolves after 1s + hypnotic idle breathing"
+          git push
