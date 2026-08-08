@@ -12,7 +12,7 @@ import { hashToPosition } from './remotePosition'
 import { buildLines } from './connections'
 import { createLinkAnimator } from './constellation'
 import { arcPoint, drawReveal, keySeed, pulse, pulsePhase, taper } from './arc'
-import { breathingFlicker } from './flicker'
+import { twinkle } from './twinkle'
 import { buildStarfield } from './starfield'
 
 export interface SkyHandles {
@@ -52,6 +52,8 @@ const STARFIELD_RADIUS = 55
 
 interface StarSprite {
   sprite: THREE.Sprite
+  /** Materiale dedicato: consente un twinkle indipendente per ogni stella. */
+  material: THREE.SpriteMaterial
 }
 
 function createGlowTexture(): THREE.Texture {
@@ -188,8 +190,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   function acquireSprite(): StarSprite {
     const star = pool.pop()
     if (star) return star
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }))
-    const created = { sprite }
+    const material = new THREE.SpriteMaterial({ transparent: true, depthWrite: false })
+    const sprite = new THREE.Sprite(material)
+    const created = { sprite, material }
     scene.add(sprite)
     return created
   }
@@ -200,7 +203,18 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   }
 
   function applyBucket(star: StarSprite, bucket: EmotionBucket): void {
-    star.sprite.material = bucketMaterials.get(bucket)!
+    // Copiamo l'aspetto del bucket nel materiale proprio dello sprite: il
+    // twinkle deve poter modulare l'opacità di una singola stella senza
+    // trascinarsi dietro tutte le altre dello stesso colore.
+    const source = bucketMaterials.get(bucket)!
+    star.material.map = source.map
+    star.material.color.copy(source.color)
+    star.material.opacity = source.opacity
+    star.material.blending = source.blending
+    star.material.transparent = true
+    star.material.depthWrite = false
+    star.material.needsUpdate = true
+    star.sprite.material = star.material
   }
 
   // Connections (buffers riusati, allocati una volta)
@@ -300,11 +314,11 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       if (current) {
         const elapsed = now - current.birthTime
         const size = starSizeForDuration(elapsed, 0.55)
-        const flicker = breathingFlicker(now, current.confidence, seedFor(current.hash), reducedMotion)
+        const tw = twinkle(now, current.confidence, seedFor(current.hash), reducedMotion)
 
         ownMaterial.color.copy(EMOTION_COLORS[current.emotion])
-        ownMaterial.opacity = 0.75 + current.confidence * 0.25
-        ownStar.scale.setScalar(size * flicker)
+        ownMaterial.opacity = Math.min(1, (0.75 + current.confidence * 0.25) * tw.intensity)
+        ownStar.scale.setScalar(size * tw.size)
         ownRingMaterial.color.copy(EMOTION_COLORS[current.emotion])
         ownRing.scale.setScalar(size * 0.85)
         ownRing.quaternion.copy(camera.quaternion)
@@ -323,8 +337,10 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           star.sprite.position.set(pos.x, pos.y, pos.z)
           remoteSprites.set(remoteStar.hash, star)
         }
-        const flicker = breathingFlicker(now, remoteStar.confidence, seedFor(remoteStar.hash), reducedMotion)
-        star.sprite.scale.setScalar(0.5 * flicker)
+        const tw = twinkle(now, remoteStar.confidence, seedFor(remoteStar.hash), reducedMotion)
+        star.sprite.scale.setScalar(0.5 * tw.size)
+        // Ogni stella ha il proprio materiale, così può brillare per conto suo.
+        star.material.opacity = Math.min(1, 0.95 * tw.intensity)
         star.sprite.visible = true
       }
 
