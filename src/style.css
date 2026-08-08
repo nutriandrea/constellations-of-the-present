@@ -128,3 +128,29 @@ body {
     animation: none;
   }
 }
+
+#about-link {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(143, 160, 216, 0.35);
+  color: #8fa0d8;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  backdrop-filter: blur(4px);
+  background: rgba(11, 16, 48, 0.5);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+#about-link:hover {
+  color: #dfe6ff;
+  border-color: rgba(223, 230, 255, 0.6);
+}
