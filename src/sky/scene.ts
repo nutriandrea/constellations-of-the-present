@@ -7,6 +7,7 @@ import { REMOTE_TTL_MS } from './presence'
 import { hashToPosition } from './remotePosition'
 import { buildLines } from './connections'
 import { createLinkAnimator } from './constellation'
+import { arcPoint, drawReveal, keySeed, pulse, pulsePhase, taper } from './arc'
 import { breathingFlicker } from './flicker'
 import { buildStarfield } from './starfield'
 
@@ -21,11 +22,15 @@ export interface SkyHandles {
 const BUCKETS: EmotionBucket[] = ['joy', 'calm', 'sadness', 'anger', 'surprise', 'neutral']
 const MAX_DIST = 2.5
 const MAX_NEIGHBORS = 3
-const MAX_LINES = 384
+const MAX_LINES = 256
+/** Segmenti per arco: abbastanza per una curva morbida, non tanti da pesare. */
+const ARC_SEGMENTS = 14
 /** La topologia si ricalcola a bassa frequenza; le dissolvenze girano a ogni frame. */
 const TOPOLOGY_INTERVAL_MS = 220
 /** Quanto l'emozione dei due capi tinge il filo (0 = filo neutro). */
-const LINK_TINT = 0.55
+const LINK_TINT = 0.7
+/** Luminosità massima di un filo: i legami sussurrano, non gridano. */
+const LINK_GAIN = 0.5
 
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
@@ -129,17 +134,17 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const ownMaterial = bucketMaterials.get('neutral')!.clone()
   const ownStar = new THREE.Sprite(ownMaterial)
   ownStar.scale.setScalar(0.55)
-  const ownRing = new THREE.Mesh(
-    new THREE.RingGeometry(1.5, 1.6, 48),
-    new THREE.MeshBasicMaterial({
-      color: 0x8fa0d8,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    }),
-  )
+  // Alone della propria stella: un cerchio sottile e discreto, non un anello
+  // grigio che taglia il cielo.
+  const ownRingMaterial = new THREE.MeshBasicMaterial({
+    color: 0x8fa0d8,
+    transparent: true,
+    opacity: 0.16,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  })
+  const ownRing = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.012, 96), ownRingMaterial)
   scene.add(ownStar, ownRing)
 
   // Remote stars
@@ -173,8 +178,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   })
-  const linePositions = new Float32Array(MAX_LINES * 6)
-  const lineColors = new Float32Array(MAX_LINES * 6)
+  const VERTS_PER_ARC = ARC_SEGMENTS * 2
+  const linePositions = new Float32Array(MAX_LINES * VERTS_PER_ARC * 3)
+  const lineColors = new Float32Array(MAX_LINES * VERTS_PER_ARC * 3)
   const lineGeometry = new THREE.BufferGeometry()
   const linePositionsAttribute = new THREE.BufferAttribute(linePositions, 3).setUsage(THREE.DynamicDrawUsage)
   const lineColorsAttribute = new THREE.BufferAttribute(lineColors, 3).setUsage(THREE.DynamicDrawUsage)
@@ -186,6 +192,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const linkAnimator = createLinkAnimator()
   const linkColorA = new THREE.Color()
   const linkColorB = new THREE.Color()
+  const linkColorMix = new THREE.Color()
+  const arcHead = { x: 0, y: 0, z: 0 }
+  const arcTail = { x: 0, y: 0, z: 0 }
   const neutralColor = EMOTION_COLORS['neutral']
   /** Emozione per capo del filo, per tingere la linea. */
   const emotionByPoint = new Map<string, EmotionBucket>()
@@ -263,6 +272,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         ownMaterial.color.copy(EMOTION_COLORS[current.emotion])
         ownMaterial.opacity = 0.75 + current.confidence * 0.25
         ownStar.scale.setScalar(size * flicker)
+        ownRingMaterial.color.copy(EMOTION_COLORS[current.emotion])
+        ownRing.scale.setScalar(size * 0.85)
+        ownRing.quaternion.copy(camera.quaternion)
         ownRing.rotation.z += reducedMotion ? 0 : 0.002
       }
 
@@ -324,29 +336,62 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       if (count > 0) {
         for (let i = 0; i < count; i++) {
           const line = live[i]
-          const o = i * 6
-          linePositions[o] = line.ax
-          linePositions[o + 1] = line.ay
-          linePositions[o + 2] = line.az
-          linePositions[o + 3] = line.bx
-          linePositions[o + 4] = line.by
-          linePositions[o + 5] = line.bz
+          const key = line.a + '|' + line.b
+          const seed = keySeed(key)
+          const phase = reducedMotion ? -1 : pulsePhase(now, seed)
 
-          // Il filo prende una tinta appena accennata dalle due emozioni che
-          // collega: un legame fra due momenti, non una linea anonima.
-          const op = Math.max(0.04, Math.min(0.9, line.opacity)) * line.alpha
+          // Intensità di base del legame: distanza + presenza del filo.
+          const base = Math.max(0.05, Math.min(1, line.opacity)) * LINK_GAIN
           const ca = tintFor(line.a, linkColorA)
           const cb = tintFor(line.b, linkColorB)
-          lineColors[o] = ca.r * op
-          lineColors[o + 1] = ca.g * op
-          lineColors[o + 2] = ca.b * op
-          lineColors[o + 3] = cb.r * op
-          lineColors[o + 4] = cb.g * op
-          lineColors[o + 5] = cb.b * op
+
+          const arcOffset = i * VERTS_PER_ARC * 3
+          arcPoint(
+            { x: line.ax, y: line.ay, z: line.az },
+            { x: line.bx, y: line.by, z: line.bz },
+            0,
+            arcTail,
+          )
+
+          for (let sIdx = 0; sIdx < ARC_SEGMENTS; sIdx++) {
+            const t0 = sIdx / ARC_SEGMENTS
+            const t1 = (sIdx + 1) / ARC_SEGMENTS
+            arcPoint(
+              { x: line.ax, y: line.ay, z: line.az },
+              { x: line.bx, y: line.by, z: line.bz },
+              t1,
+              arcHead,
+            )
+
+            const o = arcOffset + sIdx * 6
+            linePositions[o] = arcTail.x
+            linePositions[o + 1] = arcTail.y
+            linePositions[o + 2] = arcTail.z
+            linePositions[o + 3] = arcHead.x
+            linePositions[o + 4] = arcHead.y
+            linePositions[o + 5] = arcHead.z
+
+            for (let end = 0; end < 2; end++) {
+              const t = end === 0 ? t0 : t1
+              // il filo si spegne vicino alle stelle, si disegna da a verso b
+              // e ogni tanto lo attraversa un respiro di luce
+              let v = base * taper(t) * drawReveal(t, line.alpha)
+              if (phase >= 0) v *= pulse(t, phase)
+              linkColorMix.copy(ca).lerp(cb, t).multiplyScalar(Math.min(1, v))
+              const co = o + end * 3
+              lineColors[co] = linkColorMix.r
+              lineColors[co + 1] = linkColorMix.g
+              lineColors[co + 2] = linkColorMix.b
+            }
+
+            arcTail.x = arcHead.x
+            arcTail.y = arcHead.y
+            arcTail.z = arcHead.z
+          }
         }
         linePositionsAttribute.needsUpdate = true
         lineColorsAttribute.needsUpdate = true
-        lineGeometry.setDrawRange(0, count * 2)
+        lineGeometry.setDrawRange(0, count * VERTS_PER_ARC)
         lines.visible = true
       } else {
         lines.visible = false
