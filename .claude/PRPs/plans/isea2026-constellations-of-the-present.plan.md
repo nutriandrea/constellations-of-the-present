@@ -90,10 +90,29 @@ Status 2026-08-08: completed. Render stelle riscritto: sprite con texture radial
 
 **W4 acceptance**: polished mobile-friendly sky.
 
-### W5 — Submission
+### W5 — Submission (DONE)
 1. Concept statement (≤250w), bio (≤75w) + institution, portfolio page.
 2. Public deploy URL; demo video (30–60s).
 3. Contact organizers to confirm "other digital formats" includes interactive web.
+
+Status 2026-08-08: completed (parte deploy resta bloccata: Vercel CLI non autenticato, nessun `.env` Supabase). Deliverable scritti:
+- `docs/submission/concept-statement.md` — 237 parole (≤250), byline Andrea Cacioppo, Politecnico di Milano, tema ELYAH.
+- `docs/submission/bio.md` — 66 parole (≤75).
+- `docs/submission/organizer-email.md` — bozza email agli organizzatori per confermare che il formato "interactive web" sia accettato (pronta da inviare).
+- `docs/submission/demo-constellations.webm` — video demo 58s (range 30–60s), 1280×720 WebM, registrato con Playwright (ui-demo skill) su build locale con fake media device; remoto simulato postando i messaggi `RemoteStar` già validati da `isValidRemoteStar` (publish throttling della telecamera fake impedisce stelle incrociate reali). Flusso: apertura cielo → stella locale + moment-hash → stelle remote online → connessioni → toggle suono ambientale opt-in → portfolio page. Sottotitoli in inglese.
+- `public/portfolio.html` — portfolio/landing page (concept, privacy, tech, bio) collegata dall'opera via `#about-link` (`?` in basso a destra).
+- `README.md` — documentazione tecnica completa (privacy model, stack, runbook deploy).
+- `vercel.json` — security headers per deploy Vercel (X-Frame-Options DENY, nosniff, no-referrer, Permissions-Policy camera/mic solo self, COOP same-origin).
+- Repo pubblico GitHub: `nutriandrea/constellations-of-the-present` (https://github.com/nutriandrea/constellations-of-the-present), branch `feat/isea2026-constellations`, commit `331cd55` (+ W5 successivi).
+
+Verifica: 62 test verdi (11 file), tsc + build + lint puliti.
+
+**Todo W5 rimanenti (bloccati da input/credenziali utente):**
+- Deploy pubblico: `vercel login` (interattivo) + variabili Supabase in Vercel (o deploy senza `.env` → sky broadcast multi-tab same-origin). `npm audit` prima del deploy (rischio residuo W4).
+- Invio email organizzatori (bozza pronta in `docs/submission/organizer-email.md`).
+- Contenuti personali per la submission finale (email di contatto, eventuale istituzione nel form): confermare con l'artista.
+
+**W5 acceptance**: submission package + URL + organizer confirmation (URL e conferma organizzatori pendenti da input utente).
 
 ## Validation Commands
 - Type-check: `npx tsc --noEmit`
