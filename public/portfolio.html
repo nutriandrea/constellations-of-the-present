@@ -1,279 +1,1129 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Constellations of the Present — an interactive web artwork. A shared sky built from anonymous moment-hashes. Privacy-by-design." />
-    <meta name="theme-color" content="#030305" />
-    <meta property="og:title" content="Constellations of the Present" />
-    <meta property="og:description" content="A collective sky without capture. Every visitor becomes a star — nothing raw ever leaves the device." />
+    <title>Constellations of the Present — Mondo</title>
+    <meta
+      name="description"
+      content="Constellations of the Present di Andrea Cacioppo: un cielo condiviso costruito da moment-hash anonimi. Rilevamento on-device, nessuna cattura."
+    />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href="https://constellations-of-the-present.vercel.app/portfolio.html" />
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="Constellations of the Present — Mondo" />
+    <meta
+      property="og:description"
+      content="Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella."
+    />
     <meta name="twitter:card" content="summary_large_image" />
-    <title>Constellations of the Present — Interactive Web Artwork</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@300;400&display=swap"
       rel="stylesheet"
     />
     <style>
-      :root {
-        color-scheme: dark;
-        --font-heading: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-        --font-body: 'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-        --space-0: #030305;
-        --nebula-violet: #8b6cff;
-        --nebula-cyan: #56d6f0;
-        --nebula-rose: #ff7aa8;
-        --star: #eef1ff;
-        --dim: #9aa7d4;
-        --dimmer: #6c7bb3;
-        --line: rgba(238, 241, 255, 0.1);
+      /* =========================================================
+         CONSTELLATIONS OF THE PRESENT — "MONDO"
+         Void black · paper · single acid signal.
+         Built on current web standards only: scroll-driven
+         animations, view transitions, popover, :has(), container
+         queries, color-mix, CSS 3D. No libraries.
+         ========================================================= */
+
+      @view-transition {
+        navigation: auto;
       }
 
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
+      :root {
+        color-scheme: dark;
+
+        --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+        --font-body: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+
+        --void: #000000;
+        --paper: #f2f0e9;
+        --dim: color-mix(in oklab, var(--paper) 55%, transparent);
+        --dimmer: color-mix(in oklab, var(--paper) 30%, transparent);
+        --rule: color-mix(in oklab, var(--paper) 12%, transparent);
+        --rule-soft: color-mix(in oklab, var(--paper) 6%, transparent);
+        --signal: #ceff4d;
+        --violet: #8b6cff;
+        --cyan: #56d6f0;
+        --rose: #ff7aa8;
+
+        --gutter: clamp(20px, 4vw, 64px);
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
 
       body {
         margin: 0;
-        background-color: var(--space-0);
-        color: var(--star);
+        background: var(--void);
+        color: var(--paper);
         font-family: var(--font-body);
         font-weight: 300;
-        line-height: 1.75;
+        font-size: clamp(15px, 1.05vw, 17px);
+        line-height: 1.55;
         -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
       }
 
-      /* Nebula field */
-      .nebula {
-        pointer-events: none;
+      body:has(#gate[data-open='true']) {
+        overflow: hidden;
+      }
+
+      ::selection {
+        background: var(--signal);
+        color: var(--void);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* --- persistent instrument frame ------------------------ */
+      .frame {
         position: fixed;
         inset: 0;
-        z-index: -2;
+        z-index: 2;
+        pointer-events: none;
         background-image:
-          radial-gradient(ellipse 70% 50% at 18% 12%, rgba(139, 108, 255, 0.28) 0%, transparent 60%),
-          radial-gradient(ellipse 60% 45% at 84% 38%, rgba(86, 214, 240, 0.2) 0%, transparent 60%),
-          radial-gradient(ellipse 80% 55% at 40% 82%, rgba(255, 122, 168, 0.14) 0%, transparent 62%);
+          linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
+        background-size: 12.5vw 12.5vw;
+        mask-image: radial-gradient(ellipse 80% 80% at 50% 45%, #000 30%, transparent 80%);
       }
 
-      /* Starfield */
-      .stars {
+      .grain {
+        position: fixed;
+        inset: -50%;
+        z-index: 3;
         pointer-events: none;
+        opacity: 0.15;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+        animation: grain-drift 6s steps(6) infinite;
+      }
+
+      @keyframes grain-drift {
+        0% { transform: translate3d(0, 0, 0); }
+        20% { transform: translate3d(-3%, 2%, 0); }
+        40% { transform: translate3d(2%, -3%, 0); }
+        60% { transform: translate3d(-2%, -2%, 0); }
+        80% { transform: translate3d(3%, 1%, 0); }
+        100% { transform: translate3d(0, 0, 0); }
+      }
+
+      /* --- entry gate ----------------------------------------- */
+      #gate {
         position: fixed;
         inset: 0;
-        z-index: -1;
-        opacity: 0.5;
-        background-repeat: repeat;
-        background-size: 420px 320px;
-        background-image:
-          radial-gradient(1.6px 1.6px at 24px 38px, #ffffff, transparent),
-          radial-gradient(1px 1px at 108px 92px, rgba(238,241,255,0.9), transparent),
-          radial-gradient(1.4px 1.4px at 186px 26px, var(--nebula-violet), transparent),
-          radial-gradient(1px 1px at 244px 148px, rgba(238,241,255,0.75), transparent),
-          radial-gradient(1.6px 1.6px at 312px 66px, var(--nebula-cyan), transparent),
-          radial-gradient(1px 1px at 372px 212px, rgba(238,241,255,0.7), transparent),
-          radial-gradient(1.3px 1.3px at 64px 240px, var(--nebula-rose), transparent),
-          radial-gradient(1px 1px at 288px 296px, rgba(238,241,255,0.6), transparent);
-        animation: drift 220s linear infinite;
+        z-index: 90;
+        display: grid;
+        place-items: center;
+        background: var(--void);
+        transition: opacity 1s var(--ease), visibility 1s;
       }
 
-      @keyframes drift {
-        from { background-position: 0 0; }
-        to { background-position: 420px 320px; }
+      #gate[data-open='false'] {
+        opacity: 0;
+        visibility: hidden;
       }
 
-      header {
-        position: relative;
-        min-height: 100svh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+      .gate-inner {
+        display: grid;
+        justify-items: center;
+        gap: 26px;
         text-align: center;
-        padding: 6rem 1.5rem 4rem;
+        padding: var(--gutter);
+        max-width: 46ch;
       }
 
-      .eyebrow {
-        font-family: var(--font-heading);
-        font-size: 0.7rem;
+      .gate-mark {
+        font-family: var(--font-mono);
+        font-size: 10px;
         letter-spacing: 0.34em;
         text-transform: uppercase;
-        color: var(--dimmer);
-        margin: 0 0 2rem;
-      }
-
-      h1 {
-        font-family: var(--font-heading);
-        font-weight: 500;
-        font-size: clamp(2.2rem, 7vw, 4.6rem);
-        line-height: 1.05;
-        letter-spacing: -0.01em;
-        margin: 0;
-        text-shadow: 0 0 60px rgba(139, 108, 255, 0.45);
-      }
-
-      .lede {
         color: var(--dim);
-        max-width: 46ch;
-        margin: 2rem auto 0;
-        font-size: clamp(0.98rem, 1.6vw, 1.12rem);
       }
 
-      .launch {
-        display: inline-block;
-        margin-top: 3rem;
-        padding: 0.95rem 2.2rem;
-        border: 1px solid rgba(139, 108, 255, 0.5);
+      .gate-title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(2.1rem, 6vw, 4.4rem);
+        line-height: 0.88;
+        letter-spacing: -0.045em;
+        text-transform: uppercase;
+        text-wrap: balance;
+      }
+
+      .gate-title em {
+        display: block;
+        font-style: normal;
+        color: transparent;
+        -webkit-text-stroke: 1px var(--paper);
+      }
+
+      .gate-copy {
+        margin: 0;
+        color: var(--dim);
+        text-wrap: pretty;
+      }
+
+      .gate-counter {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.3em;
+        color: var(--signal);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* --- buttons -------------------------------------------- */
+      .btn {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 28px;
+        border: 1px solid var(--rule);
         border-radius: 999px;
-        background: rgba(139, 108, 255, 0.08);
-        color: var(--star);
+        background: transparent;
+        color: var(--paper);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
         text-decoration: none;
-        font-family: var(--font-heading);
-        font-size: 0.78rem;
-        letter-spacing: 0.18em;
+        cursor: pointer;
+        transition:
+          border-color 0.4s var(--ease),
+          color 0.4s var(--ease),
+          background 0.4s var(--ease),
+          letter-spacing 0.5s var(--ease);
+      }
+
+      .btn:hover,
+      .btn:focus-visible {
+        border-color: var(--signal);
+        color: var(--signal);
+        letter-spacing: 0.32em;
+        outline: none;
+      }
+
+      .btn--solid {
+        background: var(--signal);
+        border-color: var(--signal);
+        color: var(--void);
+      }
+
+      .btn--solid:hover,
+      .btn--solid:focus-visible {
+        color: var(--void);
+        background: color-mix(in oklab, var(--signal) 82%, var(--paper));
+      }
+
+      .btn--quiet {
+        border: 0;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--rule);
+        border-radius: 0;
+        color: var(--dim);
+      }
+
+      /* --- masthead ------------------------------------------- */
+      .masthead {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 22px var(--gutter);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
-        backdrop-filter: blur(10px);
-        transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+        mix-blend-mode: difference;
       }
 
-      .launch:hover {
-        background: rgba(139, 108, 255, 0.18);
-        border-color: rgba(139, 108, 255, 0.9);
-        box-shadow: 0 0 50px rgba(139, 108, 255, 0.35);
-        transform: translateY(-2px);
+      .masthead a {
+        text-decoration: none;
+        color: var(--paper);
+        opacity: 0.75;
+        transition: opacity 0.3s var(--ease);
       }
 
-      .meta {
-        margin-top: 3.5rem;
-        font-family: var(--font-heading);
-        font-size: 0.68rem;
+      .masthead a:hover {
+        opacity: 1;
+      }
+
+      .masthead nav {
+        display: flex;
+        gap: 26px;
+      }
+
+      @media (max-width: 720px) {
+        .masthead nav {
+          display: none;
+        }
+      }
+
+      .menu-btn {
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--paper);
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        font-size: 12px;
+        letter-spacing: 0.1em;
+      }
+
+      #menu {
+        border: 1px solid var(--rule);
+        border-radius: 18px;
+        background: color-mix(in oklab, var(--void) 82%, transparent);
+        backdrop-filter: blur(18px);
+        color: var(--paper);
+        padding: 22px;
+        margin: 0;
+        position: fixed;
+        inset: auto var(--gutter) auto auto;
+        top: 74px;
+        min-width: 240px;
+      }
+
+      #menu:popover-open {
+        animation: pop 0.4s var(--ease);
+      }
+
+      @keyframes pop {
+        from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      }
+
+      #menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 2px;
+      }
+
+      #menu a {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--rule-soft);
+        text-decoration: none;
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+      }
+
+      #menu a span {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.2em;
         color: var(--dimmer);
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
+        align-self: center;
       }
 
+      /* --- the orb -------------------------------------------- */
+      .world {
+        position: relative;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        perspective: 2400px;
+        touch-action: pan-y;
+        overflow: clip;
+      }
+
+      .orb {
+        position: relative;
+        width: min(62vmin, 620px);
+        aspect-ratio: 1;
+        transform-style: preserve-3d;
+        transform: rotateX(-12deg) rotateY(var(--spin, 0deg));
+        will-change: transform;
+        translate: clamp(0px, 9vw, 150px) -4vh;
+      }
+
+      .orb::after {
+        content: '';
+        position: absolute;
+        inset: 12%;
+        border-radius: 50%;
+        background: radial-gradient(circle at 42% 36%, color-mix(in oklab, var(--violet) 22%, transparent), transparent 62%);
+        filter: blur(42px);
+        transform: translateZ(-160px);
+      }
+
+      .ring {
+        position: absolute;
+        inset: 0;
+        border: 1px solid color-mix(in oklab, var(--paper) 13%, transparent);
+        border-radius: 50%;
+        transform: rotateY(calc(var(--i) * 15deg));
+      }
+
+      .ring--lat {
+        inset: auto 0;
+        top: 50%;
+        height: 0;
+        transform: translateY(calc(var(--o) * 1px)) rotateX(90deg) scale(var(--s));
+      }
+
+      .node-anchor {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: clamp(110px, 13vw, 190px);
+        aspect-ratio: 4 / 3;
+        margin: 0;
+        transform-style: preserve-3d;
+        transform: translate(-50%, -50%) rotateY(var(--ry)) rotateX(var(--rx))
+          translateZ(var(--tz, 300px));
+      }
+
+      .node {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        padding: 14px;
+        display: grid;
+        place-content: center;
+        gap: 6px;
+        text-align: center;
+        border: 1px solid var(--rule);
+        background: color-mix(in oklab, var(--void) 62%, transparent);
+        backdrop-filter: blur(3px);
+        transform: rotateY(calc((var(--ry) + var(--spin, 0deg)) * -1)) rotateX(12deg)
+          translateY(var(--dy, 0px));
+        transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+      }
+
+      .node::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--tint, var(--violet)) 45%, transparent), transparent 60%),
+          radial-gradient(circle at 75% 80%, color-mix(in oklab, var(--tint, var(--violet)) 22%, transparent), transparent 65%);
+        opacity: 0.75;
+        mix-blend-mode: screen;
+      }
+
+      .node:hover {
+        border-color: var(--signal);
+        background: color-mix(in oklab, var(--void) 40%, transparent);
+      }
+
+      .node b {
+        position: relative;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(0.85rem, 1.3vw, 1.15rem);
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+
+      .node span {
+        position: relative;
+        font-family: var(--font-mono);
+        font-size: 8px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+
+      .world-title {
+        position: absolute;
+        left: var(--gutter);
+        bottom: clamp(90px, 12vh, 150px);
+        z-index: 5;
+        margin: 0;
+        max-width: min(46vw, 560px);
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(2.2rem, 6.8vw, 6.4rem);
+        line-height: 0.84;
+        letter-spacing: -0.05em;
+        text-transform: uppercase;
+        mix-blend-mode: difference;
+        pointer-events: none;
+      }
+
+      .world-title em {
+        display: block;
+        font-style: normal;
+        color: transparent;
+        -webkit-text-stroke: 1px var(--paper);
+      }
+
+      .world-meta {
+        position: absolute;
+        right: var(--gutter);
+        bottom: clamp(90px, 12vh, 150px);
+        z-index: 5;
+        text-align: right;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--dim);
+        display: grid;
+        gap: 6px;
+      }
+
+      .drag-hint {
+        position: absolute;
+        left: 50%;
+        bottom: 34px;
+        transform: translateX(-50%);
+        z-index: 5;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      @media (max-width: 720px) {
+        .world-title { max-width: none; right: var(--gutter); bottom: 130px; }
+        .world-meta { display: none; }
+      }
+
+      /* --- editorial sections --------------------------------- */
       main {
         position: relative;
-        max-width: 760px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem 6rem;
+        z-index: 4;
       }
 
       section {
-        margin: 0 0 1.75rem;
-        padding: 2.4rem clamp(1.4rem, 4vw, 2.6rem);
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        background: rgba(7, 9, 21, 0.55);
-        backdrop-filter: blur(16px) saturate(140%);
-        -webkit-backdrop-filter: blur(16px) saturate(140%);
-        transition: border-color 0.35s ease, box-shadow 0.35s ease;
+        padding: clamp(90px, 14vh, 190px) var(--gutter);
+        border-top: 1px solid var(--rule-soft);
+        container-type: inline-size;
       }
 
-      section:hover { border-color: rgba(139, 108, 255, 0.35); box-shadow: 0 0 60px rgba(139, 108, 255, 0.12); }
-      section:nth-of-type(2):hover { border-color: rgba(86, 214, 240, 0.35); box-shadow: 0 0 60px rgba(86, 214, 240, 0.12); }
-      section:nth-of-type(3):hover { border-color: rgba(255, 122, 168, 0.32); box-shadow: 0 0 60px rgba(255, 122, 168, 0.1); }
+      .sec-head {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: clamp(38px, 6vh, 70px);
+      }
+
+      @container (min-width: 780px) {
+        .sec-head {
+          grid-template-columns: 12ch 1fr;
+          gap: 40px;
+          align-items: start;
+        }
+      }
+
+      .sec-num {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--signal);
+        padding-top: 0.9em;
+      }
 
       h2 {
-        font-family: var(--font-heading);
-        font-weight: 500;
-        font-size: 0.78rem;
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(1.9rem, 5.2vw, 4.2rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        text-wrap: balance;
+      }
+
+      .lede {
+        max-width: 62ch;
+        color: var(--dim);
+        font-size: clamp(1rem, 1.5vw, 1.3rem);
+        line-height: 1.5;
+        text-wrap: pretty;
+      }
+
+      .cols {
+        display: grid;
+        gap: clamp(24px, 3vw, 46px);
+      }
+
+      @container (min-width: 780px) {
+        .cols {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      .card {
+        border-top: 1px solid var(--rule);
+        padding-top: 20px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .card i {
+        width: 7px;
+        height: 7px;
+        background: var(--tint, var(--signal));
+        font-style: normal;
+      }
+
+      .card h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--dim);
+        font-size: 0.95rem;
+      }
+
+      /* stack list */
+      .stack {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .stack li {
+        display: grid;
+        grid-template-columns: 4ch 1fr auto;
+        gap: 18px;
+        align-items: baseline;
+        padding: 18px 0;
+        border-top: 1px solid var(--rule-soft);
+        font-family: var(--font-display);
+        font-size: clamp(1rem, 2.2vw, 1.7rem);
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        transition: color 0.35s var(--ease), padding-left 0.45s var(--ease);
+      }
+
+      .stack li:hover {
+        color: var(--signal);
+        padding-left: 12px;
+      }
+
+      .stack li b,
+      .stack li em {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 400;
+        font-style: normal;
+        letter-spacing: 0.2em;
+        color: var(--dimmer);
+        text-transform: uppercase;
+      }
+
+      .spectrum {
+        height: 1px;
+        margin-top: 46px;
+        background: linear-gradient(
+          90deg,
+          var(--signal),
+          var(--rose),
+          var(--violet),
+          var(--cyan),
+          var(--signal)
+        );
+        opacity: 0.7;
+      }
+
+      .spectrum-key {
+        margin-top: 12px;
+        font-family: var(--font-mono);
+        font-size: 9px;
         letter-spacing: 0.24em;
         text-transform: uppercase;
-        color: var(--nebula-violet);
-        margin: 0 0 1.4rem;
-      }
-
-      section:nth-of-type(2) h2 { color: var(--nebula-cyan); }
-      section:nth-of-type(3) h2 { color: var(--nebula-rose); }
-
-      p { color: var(--dim); margin: 0 0 1.15rem; }
-      p:last-child { margin-bottom: 0; }
-      em { color: var(--star); font-style: italic; }
-      a { color: var(--nebula-cyan); }
-
-      .pills { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.6rem; }
-
-      .pill {
-        display: inline-block;
-        padding: 0.3rem 0.85rem;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: rgba(238, 241, 255, 0.04);
-        font-family: var(--font-heading);
-        font-size: 0.68rem;
-        letter-spacing: 0.06em;
-        color: var(--dim);
-      }
-
-      footer {
-        position: relative;
-        text-align: center;
-        padding: 4rem 1.5rem 5rem;
-        font-size: 0.8rem;
         color: var(--dimmer);
-        border-top: 1px solid var(--line);
       }
 
-      footer a {
-        display: inline-block;
-        margin-top: 1.2rem;
-        font-family: var(--font-heading);
-        font-size: 0.72rem;
-        letter-spacing: 0.18em;
+      /* author */
+      .author {
+        display: grid;
+        gap: clamp(28px, 4vw, 60px);
+      }
+
+      @container (min-width: 780px) {
+        .author {
+          grid-template-columns: 1.1fr 0.9fr;
+          align-items: end;
+        }
+      }
+
+      blockquote {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 300;
+        font-size: clamp(1.3rem, 3.2vw, 2.4rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      blockquote footer {
+        margin-top: 22px;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.24em;
         text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      /* outro */
+      .outro {
+        min-height: 86svh;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        gap: 30px;
+        justify-items: center;
+      }
+
+      .outro h2 {
+        font-size: clamp(2.2rem, 9vw, 7.5rem);
+        font-weight: 800;
+        text-transform: uppercase;
+        line-height: 0.85;
+        letter-spacing: -0.05em;
+      }
+
+      footer.site {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 26px var(--gutter);
+        border-top: 1px solid var(--rule-soft);
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      /* --- scroll-driven reveals (progressive enhancement) ---- */
+      @supports (animation-timeline: view()) {
+        @media (prefers-reduced-motion: no-preference) {
+          .reveal {
+            animation: reveal linear both;
+            animation-timeline: view();
+            animation-range: entry 8% cover 34%;
+          }
+
+          .sec-num {
+            animation: rule-in linear both;
+            animation-timeline: view();
+            animation-range: entry 10% cover 30%;
+          }
+        }
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(38px);
+          filter: blur(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+          filter: none;
+        }
+      }
+
+      @keyframes rule-in {
+        from { opacity: 0; letter-spacing: 0.6em; }
+        to { opacity: 1; letter-spacing: 0.3em; }
+      }
+
+      /* --- custom cursor -------------------------------------- */
+      #cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 80;
+        width: 26px;
+        height: 26px;
+        border: 1px solid var(--paper);
+        border-radius: 50%;
+        pointer-events: none;
+        mix-blend-mode: difference;
+        translate: -50% -50%;
+        transform: translate3d(var(--x, 50vw), var(--y, 50vh), 0) scale(var(--k, 1));
+        transition: scale 0.3s var(--ease);
+        opacity: 0;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        #cursor { opacity: 1; }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .stars { animation: none; }
         html { scroll-behavior: auto; }
+        .grain { animation: none; }
+        .orb { transition: none; }
       }
     </style>
   </head>
-  <body>
-    <div class="nebula" aria-hidden="true"></div>
-    <div class="stars" aria-hidden="true"></div>
 
-    <header>
-      <p class="eyebrow">Interactive web artwork · 2026</p>
-      <h1>Constellations<br />of the Present</h1>
-      <p class="lede">A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever leaves the device.</p>
-      <a class="launch" href="/" rel="nofollow">Enter the sky</a>
-      <p class="meta">Andrea Cacioppo · Politecnico di Milano</p>
+  <body>
+    <div class="frame" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="cursor" aria-hidden="true"></div>
+
+    <!-- ENTRY GATE -->
+    <div id="gate" data-open="true">
+      <div class="gate-inner">
+        <p class="gate-mark">Opera web interattiva · MMXXVI</p>
+        <h1 class="gate-title">Constellations<em>of the Present</em></h1>
+        <p class="gate-copy">
+          Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella — e
+          nulla di grezzo lascia mai il dispositivo.
+        </p>
+        <button class="btn btn--solid" id="gate-enter" type="button">Entra nel mondo</button>
+        <p class="gate-counter" id="gate-counter">000</p>
+      </div>
+    </div>
+
+    <!-- MASTHEAD -->
+    <header class="masthead">
+      <a href="/portfolio.html">COTP / Osservatorio</a>
+      <nav>
+        <a href="#concetto">Concetto</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#tecnica">Tecnica</a>
+        <a href="#autore">Autore</a>
+      </nav>
+      <button class="menu-btn" type="button" popovertarget="menu" aria-label="Apri il menu">···</button>
     </header>
 
-    <main>
-      <section aria-label="Concept">
-        <h2>Concept</h2>
-        <p>The sky is the original shared surface: the same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds that surface for the network age — a collective sky that exists only in the living present, built from moments instead of profiles.</p>
-        <p>Each visitor's presence is sensed entirely on their own device. The camera reads expression, attention, and engagement in real time; the reading is quantized and immediately reduced to a non-reversible hash — a "moment-hash" — seeded with a random nonce. Only this anonymous code leaves the device, where it places a star in a constellation shared by everyone looking up at the same moment.</p>
-        <p>Stars flicker with the uncertainty of the moment that created them, grow while that moment is held, and fade when the person looks away. Connection lines form only between people present in the same instant — a web of the now.</p>
-      </section>
+    <div id="menu" popover>
+      <ul>
+        <li><a href="#concetto">Concetto <span>01</span></a></li>
+        <li><a href="#privacy">Privacy <span>02</span></a></li>
+        <li><a href="#tecnica">Tecnica <span>03</span></a></li>
+        <li><a href="#autore">Autore <span>04</span></a></li>
+        <li><a href="/">Entra nel cielo <span>↗</span></a></li>
+      </ul>
+    </div>
 
-      <section aria-label="Privacy">
-        <h2>A Sky Without Capture</h2>
-        <p>Nothing raw is ever transmitted, stored, or logged in any form that could identify a person. The microphone — strictly opt-in — feeds only a live audio level into an ambient drone; it never records, never transmits a signal, and never leaves the browser. Face tracking runs entirely on-device and is discarded frame by frame.</p>
-        <p>The artwork is a working proof of its own thesis: that a collective can be built without capturing anyone.</p>
-      </section>
+    <!-- THE WORLD -->
+    <div class="world" id="world">
+      <div class="orb" id="orb" aria-hidden="true">
+        <div class="ring" style="--i: 0"></div>
+        <div class="ring" style="--i: 1"></div>
+        <div class="ring" style="--i: 2"></div>
+        <div class="ring" style="--i: 3"></div>
+        <div class="ring" style="--i: 4"></div>
+        <div class="ring" style="--i: 5"></div>
+        <div class="ring ring--lat" style="--o: -260; --s: 0.55"></div>
+        <div class="ring ring--lat" style="--o: -170; --s: 0.82"></div>
+        <div class="ring ring--lat" style="--o: -60; --s: 0.98"></div>
+        <div class="ring ring--lat" style="--o: 60; --s: 0.98"></div>
+        <div class="ring ring--lat" style="--o: 170; --s: 0.82"></div>
+        <div class="ring ring--lat" style="--o: 260; --s: 0.55"></div>
 
-      <section aria-label="Technical">
-        <h2>Technical</h2>
-        <div class="pills">
-          <span class="pill">Vite + TypeScript</span><span class="pill">Three.js (WebGL)</span><span class="pill">MediaPipe Face Landmarker</span><span class="pill">Web Crypto SHA-256</span><span class="pill">BroadcastChannel / WebSocket</span><span class="pill">Privacy-by-design</span>
+        <div class="node-anchor" style="--ry: 10deg; --rx: 0deg; --tz: 320px; --dy: -120px">
+          <figure class="node" style="--tint: var(--violet)">
+            <b>Moment-hash</b>
+            <span>SHA-256 · nonce</span>
+          </figure>
         </div>
-        <p>Face geometry is analyzed locally to derive an expression bucket and engagement estimate. These quantized values, together with a random nonce, are hashed into an anonymous seed that determines the star's position and identity. No audio or video data ever leaves the device.</p>
+        <div class="node-anchor" style="--ry: 82deg; --rx: 0deg; --tz: 320px; --dy: 78px">
+          <figure class="node" style="--tint: var(--cyan)">
+            <b>On-device</b>
+            <span>MediaPipe</span>
+          </figure>
+        </div>
+        <div class="node-anchor" style="--ry: 154deg; --rx: 0deg; --tz: 320px; --dy: -52px">
+          <figure class="node" style="--tint: var(--rose)">
+            <b>Cielo condiviso</b>
+            <span>Realtime</span>
+          </figure>
+        </div>
+        <div class="node-anchor" style="--ry: 226deg; --rx: 0deg; --tz: 320px; --dy: 120px">
+          <figure class="node" style="--tint: var(--signal)">
+            <b>Nessuna cattura</b>
+            <span>Zero raw data</span>
+          </figure>
+        </div>
+        <div class="node-anchor" style="--ry: 298deg; --rx: 0deg; --tz: 320px; --dy: -96px">
+          <figure class="node" style="--tint: var(--violet)">
+            <b>Presenza viva</b>
+            <span>TTL breve</span>
+          </figure>
+        </div>
+      </div>
+
+      <h2 class="world-title">Il mondo<em>del presente</em></h2>
+
+      <div class="world-meta">
+        <span>Lat — / Lon — / Ora locale</span>
+        <span>Andrea Cacioppo · Milano</span>
+        <span id="live-clock">--:--:--</span>
+      </div>
+
+      <p class="drag-hint">Trascina per ruotare</p>
+    </div>
+
+    <main>
+      <!-- 01 CONCEPT -->
+      <section id="concetto">
+        <div class="sec-head">
+          <p class="sec-num">01 / Concetto</p>
+          <h2 class="reveal">Il cielo è la prima superficie condivisa.</h2>
+        </div>
+        <div class="reveal">
+          <p class="lede">
+            Le stesse stelle per tutti, ovunque. <em>Constellations of the Present</em> ricostruisce
+            quella superficie per l'età della rete: un cielo collettivo che esiste solo nel presente
+            vivo, costruito da momenti invece che da profili.
+          </p>
+          <p class="lede">
+            La presenza di ogni visitatore viene rilevata interamente sul suo dispositivo. La camera
+            legge espressione, attenzione e coinvolgimento in tempo reale; la lettura viene
+            quantizzata e ridotta subito a un hash non reversibile — un "moment-hash" — con un nonce
+            casuale. Solo quel codice anonimo lascia il dispositivo.
+          </p>
+        </div>
       </section>
 
-      <section aria-label="About">
-        <h2>Artist</h2>
-        <p>Andrea Cacioppo is an Italian designer and creative developer based in Milan, currently studying at Politecnico di Milano. His practice sits at the intersection of interaction design, creative code, and privacy-by-design, exploring how networked systems can create intimacy and collectivity without surveillance. His works are meant to be experienced live, in the present tense, leaving nothing behind.</p>
+      <!-- 02 PRIVACY -->
+      <section id="privacy">
+        <div class="sec-head">
+          <p class="sec-num">02 / Privacy</p>
+          <h2 class="reveal">Nulla di grezzo viene trasmesso, salvato o registrato.</h2>
+        </div>
+        <div class="cols reveal">
+          <article class="card" style="--tint: var(--cyan)">
+            <i></i>
+            <h3>Rilevamento on-device</h3>
+            <p>
+              Il face tracking gira interamente nel browser e viene scartato fotogramma per
+              fotogramma. Nessuna immagine o video lascia mai il dispositivo.
+            </p>
+          </article>
+          <article class="card" style="--tint: var(--violet)">
+            <i></i>
+            <h3>Moment-hash</h3>
+            <p>
+              I valori quantizzati di espressione e coinvolgimento vengono hashati con un nonce
+              casuale. Il risultato è anonimo e non reversibile.
+            </p>
+          </article>
+          <article class="card" style="--tint: var(--rose)">
+            <i></i>
+            <h3>Audio solo su consenso</h3>
+            <p>
+              Il microfono alimenta soltanto un livello audio dal vivo dentro un drone ambientale.
+              Non registra, non trasmette, non esce dal browser.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 03 TECHNICAL -->
+      <section id="tecnica">
+        <div class="sec-head">
+          <p class="sec-num">03 / Tecnica</p>
+          <h2 class="reveal">Uno stack privacy-by-design.</h2>
+        </div>
+        <ul class="stack reveal">
+          <li><b>01</b> Vite + TypeScript <em>build</em></li>
+          <li><b>02</b> Three.js — WebGL, bloom, tonemapping ACES <em>render</em></li>
+          <li><b>03</b> MediaPipe Face Landmarker (on-device) <em>sensing</em></li>
+          <li><b>04</b> Web Crypto SHA-256 — derivazione del seme <em>hash</em></li>
+          <li><b>05</b> Topologia a vicini mutui (k-NN) <em>grafo</em></li>
+          <li><b>06</b> Archi di Bézier con rivelazione progressiva <em>disegno</em></li>
+          <li><b>07</b> Gradiente emotivo globale, corretto in gamma <em>colore</em></li>
+          <li><b>08</b> Realtime anonimo — nessun dato personale <em>rete</em></li>
+        </ul>
+        <div class="spectrum" aria-hidden="true"></div>
+        <p class="spectrum-key">
+          Gioia → Sorpresa → Rabbia → Tristezza → Calma → Neutro : un unico gradiente, sei letture
+        </p>
+      </section>
+
+      <!-- 04 AUTHOR -->
+      <section id="autore">
+        <div class="sec-head">
+          <p class="sec-num">04 / Autore</p>
+          <h2 class="reveal">Andrea Cacioppo</h2>
+        </div>
+        <div class="author reveal">
+          <blockquote>
+            "Le mie opere sono pensate per essere vissute dal vivo, al presente, senza lasciare
+            nulla dietro di sé."
+            <footer>Andrea Cacioppo — MMXXVI</footer>
+          </blockquote>
+          <p class="lede">
+            Designer e creative developer italiano, con base a Milano, studia al Politecnico di
+            Milano. La sua pratica sta all'incrocio fra interaction design, codice creativo e
+            privacy-by-design, esplorando come i sistemi in rete possano creare intimità e
+            collettività senza sorveglianza.
+          </p>
+        </div>
+      </section>
+
+      <!-- OUTRO -->
+      <section class="outro">
+        <h2 class="reveal">Guarda in alto.</h2>
+        <p class="lede reveal" style="max-width: 46ch">
+          La tua stella appare solo mentre sei presente — e scompare nel momento in cui distogli lo
+          sguardo.
+        </p>
+        <a class="btn btn--solid reveal" href="/">Entra nel cielo</a>
       </section>
     </main>
 
-    <footer>
-      Constellations of the Present — an artwork about being together in the now, without being captured.<br />
-      <a href="/">Open the artwork</a>
+    <footer class="site">
+      <span>Constellations of the Present</span>
+      <span>ISEA 2026 · Opera web interattiva</span>
+      <span>© 2026 Andrea Cacioppo</span>
     </footer>
+
+    <script type="module">
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ---- entry gate with a short count-in ---- */
+      const gate = document.getElementById('gate');
+      const counter = document.getElementById('gate-counter');
+      let n = 0;
+      const tick = setInterval(() => {
+        n = Math.min(100, n + Math.ceil(Math.random() * 9));
+        counter.textContent = String(n).padStart(3, '0');
+        if (n >= 100) clearInterval(tick);
+      }, 90);
+
+      document.getElementById('gate-enter').addEventListener('click', () => {
+        gate.dataset.open = 'false';
+        clearInterval(tick);
+      });
+
+      /* ---- orb: idle spin + pointer drag, one rAF loop ---- */
+      const orb = document.getElementById('orb');
+      const world = document.getElementById('world');
+      let spin = 0;
+      let velocity = reduced ? 0 : 0.035;
+      let dragging = false;
+      let lastX = 0;
+
+      world.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        lastX = e.clientX;
+        world.setPointerCapture(e.pointerId);
+      });
+
+      world.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        lastX = e.clientX;
+        spin += dx * 0.22;
+        velocity = dx * 0.05;
+      });
+
+      const release = () => {
+        dragging = false;
+      };
+      world.addEventListener('pointerup', release);
+      world.addEventListener('pointercancel', release);
+
+      const idle = reduced ? 0 : 0.035;
+      const anchors = [...document.querySelectorAll('.node-anchor')].map((el) => ({
+        el,
+        card: el.querySelector('.node'),
+        ry: parseFloat(getComputedStyle(el).getPropertyValue('--ry')),
+      }));
+
+      function frame() {
+        if (!dragging) {
+          velocity += (idle - velocity) * 0.04;
+          spin += velocity;
+        }
+        orb.style.setProperty('--spin', spin.toFixed(2) + 'deg');
+
+        // depth cue: nodes on the far side of the sphere recede
+        for (const a of anchors) {
+          const facing = Math.cos(((a.ry + spin) * Math.PI) / 180);
+          // opacity must live on the leaf: setting it on the anchor would
+          // flatten its preserve-3d context and collapse the billboard
+          a.card.style.opacity = (0.14 + 0.86 * ((facing + 1) / 2) ** 1.6).toFixed(3);
+          a.el.style.zIndex = String(Math.round(facing * 100));
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      /* ---- local clock, the work is about the present ---- */
+      const clock = document.getElementById('live-clock');
+      const setClock = () => {
+        clock.textContent = new Date().toLocaleTimeString('it-IT');
+      };
+      setClock();
+      setInterval(setClock, 1000);
+
+      /* ---- custom cursor ---- */
+      const cursor = document.getElementById('cursor');
+      addEventListener('pointermove', (e) => {
+        cursor.style.setProperty('--x', e.clientX + 'px');
+        cursor.style.setProperty('--y', e.clientY + 'px');
+      });
+      addEventListener('pointerover', (e) => {
+        const interactive = e.target.closest('a, button, .node, .stack li');
+        cursor.style.setProperty('--k', interactive ? '2.2' : '1');
+      });
+
+      /* ---- reveal fallback where scroll-driven CSS is missing ---- */
+      if (!CSS.supports('animation-timeline: view()') && !reduced) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              entry.target.animate(
+                [
+                  { opacity: 0, transform: 'translateY(38px)', filter: 'blur(6px)' },
+                  { opacity: 1, transform: 'none', filter: 'none' },
+                ],
+                { duration: 900, easing: 'cubic-bezier(0.22,1,0.36,1)', fill: 'both' },
+              );
+              io.unobserve(entry.target);
+            }
+          },
+          { threshold: 0.15 },
+        );
+        document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+      }
+    </script>
   </body>
 </html>
