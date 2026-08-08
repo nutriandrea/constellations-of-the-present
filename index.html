@@ -4,12 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella — nulla di grezzo lascia il dispositivo." />
-    <meta name="theme-color" content="#030305" />
+    <meta
+      name="description"
+      content="Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella — nulla di grezzo lascia il dispositivo."
+    />
+    <meta name="theme-color" content="#000000" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
     <title>Constellations of the Present</title>
@@ -22,13 +25,27 @@
         aria-label="Cielo condiviso di stelle dei momenti presenti. Ogni stella è il codice anonimo di un momento vissuto da chi osserva in tempo reale."
       ></canvas>
       <video id="cam" autoplay muted playsinline aria-label="Anteprima della fotocamera, specchiata"></video>
+
+      <span class="reg reg-tl" aria-hidden="true"></span>
+      <span class="reg reg-tr" aria-hidden="true"></span>
+      <span class="reg reg-bl" aria-hidden="true"></span>
+      <span class="reg reg-br" aria-hidden="true"></span>
+
       <div id="status-bar">
         <span id="conn" aria-hidden="true"></span>
         <span id="status">Caricamento cielo…</span>
       </div>
       <div id="presence"></div>
+
+      <header id="masthead">
+        <h1>Constellations<em>of the Present</em></h1>
+        <p>Osservatorio · rilevamento locale · nessuna cattura</p>
+      </header>
+
       <div id="code" aria-live="polite"><span id="code-value"></span></div>
-      <a id="about-link" href="/portfolio.html" aria-label="Informazioni sul progetto">?</a>
+      <div id="edge-caption" aria-hidden="true">Andrea Cacioppo — MMXXVI</div>
+
+      <a id="about-link" href="/portfolio.html" aria-label="Informazioni sul progetto">Indice</a>
       <button id="sound-toggle" type="button" hidden>Attiva suono ambientale</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
