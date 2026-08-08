@@ -81,10 +81,14 @@ function mixColors(target: THREE.Color, a: THREE.Color, b: THREE.Color, t: numbe
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
 
-/** Dimensioni medie delle stelle: ridotte per non sovrastare il cielo. */
-const OWN_STAR_BASE_SIZE = 0.36
-const REMOTE_STAR_SIZE = 0.33
-const HISTORICAL_STAR_SIZE = 0.24
+/**
+ * Star sizes. Live stars must be indistinguishable from the background
+ * starfield: same apparent diameter on screen, same drift. Only colour and
+ * the threads betray a presence.
+ */
+const OWN_STAR_BASE_SIZE = 0.024
+const REMOTE_STAR_SIZE = 0.022
+const HISTORICAL_STAR_SIZE = 0.018
 
 interface StarSprite {
   sprite: THREE.Sprite
@@ -198,25 +202,21 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   composer.addPass(new OutputPass())
 
   const bucketMaterials = createBucketMaterials()
-  const starfield = createStarfield()
-  scene.add(starfield)
 
-  // Own star — dedicated material instance (bucket materials are shared with remotes)
+  // Everything that belongs to the sky lives in one group: background field,
+  // presences and threads drift together, as a single firmament.
+  const drift = new THREE.Group()
+  scene.add(drift)
+
+  const starfield = createStarfield()
+  drift.add(starfield)
+
+  // Own star — dedicated material instance (bucket materials are shared with
+  // remotes). No ring, no marker: your star is one of the many.
   const ownMaterial = bucketMaterials.get('neutral')!.clone()
   const ownStar = new THREE.Sprite(ownMaterial)
   ownStar.scale.setScalar(OWN_STAR_BASE_SIZE)
-  // Alone della propria stella: un cerchio sottile e discreto, non un anello
-  // grigio che taglia il cielo.
-  const ownRingMaterial = new THREE.MeshBasicMaterial({
-    color: 0x8fa0d8,
-    transparent: true,
-    opacity: 0.16,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  })
-  const ownRing = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.012, 96), ownRingMaterial)
-  scene.add(ownStar, ownRing)
+  drift.add(ownStar)
 
   // Remote stars
   const remoteSprites = new Map<string, StarSprite>()
@@ -233,7 +233,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     const material = new THREE.SpriteMaterial({ transparent: true, depthWrite: false })
     const sprite = new THREE.Sprite(material)
     const created = { sprite, material }
-    scene.add(sprite)
+    drift.add(sprite)
     return created
   }
 
@@ -291,7 +291,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   lineGeometry.setAttribute('position', linePositionsAttribute)
   lineGeometry.setAttribute('color', lineColorsAttribute)
   const lines = new THREE.LineSegments(lineGeometry, lineMaterial)
-  scene.add(lines)
+  drift.add(lines)
 
   const linkAnimator = createLinkAnimator()
   const linkColorA = new THREE.Color()
@@ -361,12 +361,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         const pos = positionFor(state.hash)
         ownPosition.set(pos.x, pos.y, pos.z)
         ownStar.position.copy(ownPosition)
-        ownRing.position.copy(ownPosition)
         ownStar.visible = true
-        ownRing.visible = true
       } else {
         ownStar.visible = false
-        ownRing.visible = false
       }
     },
     setRemoteStars(stars: TrackedStar[]) {
@@ -387,12 +384,19 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       lastFrame = now
 
       if (!reducedMotion) {
-        starfield.rotation.y += 0.0001
-        // Deriva lentissima della camera: il cielo respira, le costellazioni
-        // cambiano prospettiva senza che nulla si muova davvero.
+        // Seamless drift of the whole firmament. The yaw is a continuous
+        // rotation (a full turn every ~28 minutes, so the loop is invisible),
+        // while pitch and roll are three non-harmonic sines: the sky never
+        // repeats the same gesture twice within a viewing. Nothing ever leaves
+        // the frame, because the stars only turn around their own centre.
         const t = now / 1000
-        camera.position.x = Math.sin(t * 0.045) * 0.32
-        camera.position.y = Math.sin(t * 0.031 + 1.7) * 0.22
+        drift.rotation.y = t * 0.0037
+        drift.rotation.x =
+          Math.sin(t * 0.0163) * 0.035 + Math.sin(t * 0.0071 + 1.3) * 0.022
+        drift.rotation.z = Math.sin(t * 0.0094 + 0.6) * 0.018
+        // Barely-there parallax of the camera: depth without displacement.
+        camera.position.x = Math.sin(t * 0.045) * 0.16
+        camera.position.y = Math.sin(t * 0.031 + 1.7) * 0.11
         camera.lookAt(0, 0, 0)
       }
 
@@ -404,10 +408,6 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         ownMaterial.color.copy(SKY_COLORS[current.emotion])
         ownMaterial.opacity = Math.min(1, (0.75 + current.confidence * 0.25) * tw.intensity)
         ownStar.scale.setScalar(size * tw.size)
-        ownRingMaterial.color.copy(SKY_COLORS[current.emotion])
-        ownRing.scale.setScalar(size * 0.85)
-        ownRing.quaternion.copy(camera.quaternion)
-        ownRing.rotation.z += reducedMotion ? 0 : 0.002
       }
 
       const present = new Set<string>()
@@ -548,7 +548,6 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         const pos = positionFor(current.hash)
         ownPosition.set(pos.x, pos.y, pos.z)
         ownStar.position.copy(ownPosition)
-        ownRing.position.copy(ownPosition)
       }
       for (const [hash, star] of remoteSprites) {
         const pos = positionFor(hash)
