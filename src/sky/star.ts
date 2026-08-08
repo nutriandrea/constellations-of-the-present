@@ -22,8 +22,12 @@ export function hueForEmotion(emotion: EmotionBucket): number {
   return EMOTION_COLORS[emotion].getHSL({ h: 0, s: 0, l: 0 }).h
 }
 
+/**
+ * A presence grows barely at all: it must stay part of the background field.
+ * Caps at 1.2x base after a minute.
+ */
 export function starSizeForDuration(elapsedMs: number, baseSize: number): number {
-  const growth = 1 + Math.min(elapsedMs / 60_000, 1) * 0.8
+  const growth = 1 + Math.min(elapsedMs / 60_000, 1) * 0.2
   return baseSize * growth
 }
 
