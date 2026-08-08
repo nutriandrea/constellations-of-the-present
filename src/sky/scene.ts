@@ -1,4 +1,8 @@
 import * as THREE from 'three'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { EMOTION_COLORS, starSizeForDuration } from './star'
 import type { StarState } from './star'
 import type { EmotionBucket } from '../sensing/expression'
@@ -31,6 +35,17 @@ const TOPOLOGY_INTERVAL_MS = 220
 const LINK_TINT = 0.7
 /** Luminosità massima di un filo: i legami sussurrano, non gridano. */
 const LINK_GAIN = 0.5
+
+/**
+ * Bloom: appena un velo. Le stelle e i fili devono *respirare* luce, non
+ * bruciare. Soglia alta = solo i nuclei più caldi fioriscono; forza bassa e
+ * raggio ampio = alone morbido invece di bagliore lattiginoso.
+ */
+const BLOOM_STRENGTH = 0.42
+const BLOOM_RADIUS = 0.72
+const BLOOM_THRESHOLD = 0.42
+/** Esposizione del tonemapping ACES: sotto 1 per compensare l'additive blending. */
+const TONE_EXPOSURE = 0.92
 
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
@@ -121,10 +136,28 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  // ACES filmico: le somme additive non si tagliano più a bianco piatto,
+  // conservano la tinta dell'emozione anche nei nuclei.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = TONE_EXPOSURE
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
   camera.position.set(0, 0, 5)
+
+  // Il bloom costa: su schermi molto densi lo calcoliamo a risoluzione ridotta.
+  const composer = new EffectComposer(renderer)
+  composer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+  composer.setSize(window.innerWidth, window.innerHeight)
+  composer.addPass(new RenderPass(scene, camera))
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    BLOOM_STRENGTH,
+    BLOOM_RADIUS,
+    BLOOM_THRESHOLD,
+  )
+  composer.addPass(bloomPass)
+  composer.addPass(new OutputPass())
 
   const bucketMaterials = createBucketMaterials()
   const starfield = createStarfield()
@@ -397,12 +430,14 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         lines.visible = false
       }
 
-      renderer.render(scene, camera)
+      composer.render()
     },
     resize(width: number, height: number) {
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height)
+      composer.setSize(width, height)
+      bloomPass.setSize(width, height)
     },
   }
 }
