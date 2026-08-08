@@ -3,7 +3,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
-import { EMOTION_COLORS, starSizeForDuration } from './star'
+import { starSizeForDuration } from './star'
+import { EMOTION_PALETTE, mixGamma } from './palette'
 import type { StarState } from './star'
 import type { EmotionBucket } from '../sensing/expression'
 import type { TrackedStar } from './presence'
@@ -51,6 +52,29 @@ const BLOOM_THRESHOLD = 0.42
 /** Esposizione del tonemapping ACES: sotto 1 per compensare l'additive blending. */
 const TONE_EXPOSURE = 0.92
 
+/**
+ * Palette del cielo in forma THREE: le sei emozioni prelevate da un unico
+ * gradiente globale e livellate in luminanza percepita, così nessuna urla
+ * più delle altre. Vedi `palette.ts`.
+ */
+const SKY_COLORS: Record<EmotionBucket, THREE.Color> = BUCKETS.reduce((acc, bucket) => {
+  const c = EMOTION_PALETTE[bucket]
+  acc[bucket] = new THREE.Color(c.r, c.g, c.b)
+  return acc
+}, {} as Record<EmotionBucket, THREE.Color>)
+
+const mixScratch = { r: 0, g: 0, b: 0 }
+
+/** Interpolazione con correzione gamma: la luce si somma in spazio lineare. */
+function mixColors(target: THREE.Color, a: THREE.Color, b: THREE.Color, t: number): THREE.Color {
+  mixScratch.r = a.r
+  mixScratch.g = a.g
+  mixScratch.b = a.b
+  const out = mixGamma(mixScratch, { r: b.r, g: b.g, b: b.b }, t)
+  target.setRGB(out.r, out.g, out.b)
+  return target
+}
+
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
 
@@ -82,7 +106,7 @@ function createBucketMaterials(): Map<EmotionBucket, THREE.SpriteMaterial> {
   const materials = new Map<EmotionBucket, THREE.SpriteMaterial>()
   const texture = createGlowTexture()
   for (const bucket of BUCKETS) {
-    const color = EMOTION_COLORS[bucket]
+    const color = SKY_COLORS[bucket]
     materials.set(
       bucket,
       new THREE.SpriteMaterial({
@@ -246,7 +270,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const linkColorMix = new THREE.Color()
   const arcHead = { x: 0, y: 0, z: 0 }
   const arcTail = { x: 0, y: 0, z: 0 }
-  const neutralColor = EMOTION_COLORS['neutral']
+  const neutralColor = SKY_COLORS['neutral']
   /** Emozione per capo del filo, per tingere la linea. */
   const emotionByPoint = new Map<string, EmotionBucket>()
 
@@ -287,9 +311,10 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
 
   function tintFor(id: string, target: THREE.Color): THREE.Color {
     const emotion = emotionByPoint.get(id)
-    target.copy(neutralColor)
-    if (emotion) target.lerp(EMOTION_COLORS[emotion], LINK_TINT)
-    return target
+    if (!emotion) return target.copy(neutralColor)
+    // Neutro → emozione, miscelati in spazio lineare: le tinte restano pulite
+    // anche a metà strada, senza il grigio fangoso dell'interpolazione sRGB.
+    return mixColors(target, neutralColor, SKY_COLORS[emotion], LINK_TINT)
   }
 
   return {
@@ -335,10 +360,10 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         const size = starSizeForDuration(elapsed, 0.55)
         const tw = twinkle(now, current.confidence, seedFor(current.hash), reducedMotion)
 
-        ownMaterial.color.copy(EMOTION_COLORS[current.emotion])
+        ownMaterial.color.copy(SKY_COLORS[current.emotion])
         ownMaterial.opacity = Math.min(1, (0.75 + current.confidence * 0.25) * tw.intensity)
         ownStar.scale.setScalar(size * tw.size)
-        ownRingMaterial.color.copy(EMOTION_COLORS[current.emotion])
+        ownRingMaterial.color.copy(SKY_COLORS[current.emotion])
         ownRing.scale.setScalar(size * 0.85)
         ownRing.quaternion.copy(camera.quaternion)
         ownRing.rotation.z += reducedMotion ? 0 : 0.002
@@ -446,7 +471,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
               // e ogni tanto lo attraversa un respiro di luce
               let v = base * taper(t) * drawReveal(t, line.alpha)
               if (phase >= 0) v *= pulse(t, phase)
-              linkColorMix.copy(ca).lerp(cb, t).multiplyScalar(Math.min(1, v))
+              // Lungo l'arco le due emozioni si fondono con correzione gamma:
+              // il passaggio è continuo e non perde saturazione a metà.
+              mixColors(linkColorMix, ca, cb, t).multiplyScalar(Math.min(1, v))
               const co = o + end * 3
               lineColors[co] = linkColorMix.r
               lineColors[co + 1] = linkColorMix.g
