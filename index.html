@@ -8,11 +8,16 @@
   </head>
   <body>
     <div id="app">
-      <canvas id="sky" aria-label="Il cielo delle stelle del momento"></canvas>
-      <video id="cam" autoplay muted playsinline></video>
+      <canvas
+        id="sky"
+        role="img"
+        aria-label="Cielo condiviso di stelle dei momenti presenti. Ogni stella è il codice anonimo di un momento vissuto da chi osserva in tempo reale."
+      ></canvas>
+      <video id="cam" autoplay muted playsinline aria-label="Anteprima della fotocamera, specchiata"></video>
       <div id="status"><span id="conn"></span> Caricamento cielo…</div>
       <div id="presence"></div>
       <div id="code" aria-live="polite"><span id="code"></span></div>
+      <button id="sound-toggle" type="button" hidden>Attiva suono ambientale</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
