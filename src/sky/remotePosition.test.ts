@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hashToPosition, PRNG, seedFromHash } from './remotePosition'
+import { hashToPosition, PRNG, seedFromHash, safeSkyRadius, SKY_CAMERA_DISTANCE } from './remotePosition'
 
 describe('seedFromHash', () => {
   it('is stable for the same hash', () => {
@@ -46,6 +46,21 @@ describe('hashToPosition', () => {
       const norm = Math.hypot(pos.x, pos.y, pos.z)
       expect(norm).toBeLessThanOrEqual(3.21)
       expect(norm).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('safeSkyRadius keeps every star inside the frame', () => {
+  it.each([0.5, 0.75, 1, 1.33, 1.6, 2, 2.4])('for aspect ratio %s', (aspect) => {
+    const radius = safeSkyRadius(aspect)
+    const halfFovV = (30 * Math.PI) / 180
+    const halfFovH = Math.atan(Math.tan(halfFovV) * aspect)
+    for (let i = 0; i < 150; i++) {
+      const pos = hashToPosition(String(i).padStart(64, '0'), radius)
+      const depth = SKY_CAMERA_DISTANCE - pos.z
+      expect(depth).toBeGreaterThan(0)
+      expect(Math.abs(pos.x) / (Math.tan(halfFovH) * depth)).toBeLessThan(1)
+      expect(Math.abs(pos.y) / (Math.tan(halfFovV) * depth)).toBeLessThan(1)
     }
   })
 })
