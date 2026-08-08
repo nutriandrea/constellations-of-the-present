@@ -384,7 +384,31 @@ body[data-idle='true'] #app::before {
 }
 
 body[data-idle='true'] #code {
-  opacity: 0.35;
+  opacity: 0;
+}
+
+/* once the interface is gone the void itself breathes: slow, hypnotic */
+body[data-idle='true'] #app::after {
+  animation: void-breathe 26s ease-in-out infinite;
+}
+
+@keyframes void-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.82; transform: scale(1.035); }
+}
+
+body[data-idle='true'] #sky {
+  animation: sky-drift 40s ease-in-out infinite;
+}
+
+@keyframes sky-drift {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50% { filter: saturate(1.14) brightness(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-idle='true'] #app::after,
+  body[data-idle='true'] #sky { animation: none; }
 }
 
 @media (max-width: 760px) {

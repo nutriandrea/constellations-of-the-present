@@ -38,7 +38,7 @@ const PUBLISH_INTERVAL_MS = 5_000
 /** How often the historical sky (last 24h) is refreshed. */
 const HISTORICAL_REFRESH_MS = 5 * 60_000
 /** Stillness before the interface withdraws and only the sky remains. */
-const IDLE_AFTER_MS = 4_000
+const IDLE_AFTER_MS = 1_000
 
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
