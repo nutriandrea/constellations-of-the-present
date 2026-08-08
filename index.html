@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Constellations of the Present</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="sky" aria-label="Il cielo delle stelle del momento"></canvas>
+      <video id="cam" autoplay muted playsinline></video>
+      <div id="status"><span id="conn"></span> Caricamento cielo…</div>
+      <div id="presence"></div>
+      <div id="code" aria-live="polite"><span id="code"></span></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
