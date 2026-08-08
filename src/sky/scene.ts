@@ -6,6 +6,7 @@ import type { TrackedStar } from './presence'
 import { REMOTE_TTL_MS } from './presence'
 import { hashToPosition } from './remotePosition'
 import { buildLines } from './connections'
+import { createLinkAnimator } from './constellation'
 import { breathingFlicker } from './flicker'
 import { buildStarfield } from './starfield'
 
@@ -19,8 +20,12 @@ export interface SkyHandles {
 
 const BUCKETS: EmotionBucket[] = ['joy', 'calm', 'sadness', 'anger', 'surprise', 'neutral']
 const MAX_DIST = 2.5
-const MAX_NEIGHBORS = 4
-const MAX_LINES = 256
+const MAX_NEIGHBORS = 3
+const MAX_LINES = 384
+/** La topologia si ricalcola a bassa frequenza; le dissolvenze girano a ogni frame. */
+const TOPOLOGY_INTERVAL_MS = 220
+/** Quanto l'emozione dei due capi tinge il filo (0 = filo neutro). */
+const LINK_TINT = 0.55
 
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
@@ -178,10 +183,19 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const lines = new THREE.LineSegments(lineGeometry, lineMaterial)
   scene.add(lines)
 
+  const linkAnimator = createLinkAnimator()
+  const linkColorA = new THREE.Color()
+  const linkColorB = new THREE.Color()
+  const neutralColor = EMOTION_COLORS['neutral']
+  /** Emozione per capo del filo, per tingere la linea. */
+  const emotionByPoint = new Map<string, EmotionBucket>()
+
   let current: StarState | null = null
   const ownPosition = new THREE.Vector3(0, 0, 0)
   let remote: TrackedStar[] = []
   let reducedMotion = false
+  let lastFrame = 0
+  let lastTopology = 0
   const positionCache = new Map<string, { x: number; y: number; z: number }>()
 
   function positionFor(hash: string): { x: number; y: number; z: number } {
@@ -197,6 +211,13 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     let seed = 0
     for (let i = 0; i < hash.length && i < 8; i++) seed += hash.charCodeAt(i) * (i + 1)
     return seed || 1
+  }
+
+  function tintFor(id: string, target: THREE.Color): THREE.Color {
+    const emotion = emotionByPoint.get(id)
+    target.copy(neutralColor)
+    if (emotion) target.lerp(EMOTION_COLORS[emotion], LINK_TINT)
+    return target
   }
 
   return {
@@ -221,7 +242,18 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       reducedMotion = reduced
     },
     update(now: number) {
-      if (!reducedMotion) starfield.rotation.y += 0.0001
+      const dt = lastFrame === 0 ? 16 : Math.min(100, now - lastFrame)
+      lastFrame = now
+
+      if (!reducedMotion) {
+        starfield.rotation.y += 0.0001
+        // Deriva lentissima della camera: il cielo respira, le costellazioni
+        // cambiano prospettiva senza che nulla si muova davvero.
+        const t = now / 1000
+        camera.position.x = Math.sin(t * 0.045) * 0.32
+        camera.position.y = Math.sin(t * 0.031 + 1.7) * 0.22
+        camera.lookAt(0, 0, 0)
+      }
 
       if (current) {
         const elapsed = now - current.birthTime
@@ -268,20 +300,30 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
         }
       }
 
-      // Connections between live stars only
-      const points = remote
-        .filter((s) => present.has(s.hash))
-        .map((s) => {
+      // Topologia della costellazione: ricalcolata a scatti lenti…
+      if (now - lastTopology >= TOPOLOGY_INTERVAL_MS) {
+        lastTopology = now
+        emotionByPoint.clear()
+        const points: { id: string; x: number; y: number; z: number }[] = []
+        for (const s of remote) {
+          if (!present.has(s.hash)) continue
           const pos = positionFor(s.hash)
-          return { id: s.hash, x: pos.x, y: pos.y, z: pos.z }
-        })
-      if (current) points.push({ id: 'self', x: ownPosition.x, y: ownPosition.y, z: ownPosition.z })
+          emotionByPoint.set(s.hash, s.emotion)
+          points.push({ id: s.hash, x: pos.x, y: pos.y, z: pos.z })
+        }
+        if (current) {
+          emotionByPoint.set('self', current.emotion)
+          points.push({ id: 'self', x: ownPosition.x, y: ownPosition.y, z: ownPosition.z })
+        }
+        linkAnimator.sync(buildLines(points, MAX_DIST, MAX_NEIGHBORS))
+      }
 
-      const connections = buildLines(points, MAX_DIST, MAX_NEIGHBORS)
-      const count = Math.min(connections.length, MAX_LINES)
+      // …mentre le dissolvenze avanzano a ogni frame: i fili si disegnano.
+      const live = linkAnimator.step(dt)
+      const count = Math.min(live.length, MAX_LINES)
       if (count > 0) {
         for (let i = 0; i < count; i++) {
-          const line = connections[i]
+          const line = live[i]
           const o = i * 6
           linePositions[o] = line.ax
           linePositions[o + 1] = line.ay
@@ -289,17 +331,18 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           linePositions[o + 3] = line.bx
           linePositions[o + 4] = line.by
           linePositions[o + 5] = line.bz
-          // Linee in tinta neutra (scelta di design: fili di connessione discreti,
-          // non colorati dall'emozione dei capi). L'opacità segue la distanza.
-          const color = EMOTION_COLORS['neutral']
-          const op = Math.max(0.05, Math.min(0.9, line.opacity))
-          lineColors[o] = color.r * op
-          lineColors[o + 1] = color.g * op
-          lineColors[o + 2] = color.b * op
-          const opB = op * 0.45
-          lineColors[o + 3] = color.r * opB
-          lineColors[o + 4] = color.g * opB
-          lineColors[o + 5] = color.b * opB
+
+          // Il filo prende una tinta appena accennata dalle due emozioni che
+          // collega: un legame fra due momenti, non una linea anonima.
+          const op = Math.max(0.04, Math.min(0.9, line.opacity)) * line.alpha
+          const ca = tintFor(line.a, linkColorA)
+          const cb = tintFor(line.b, linkColorB)
+          lineColors[o] = ca.r * op
+          lineColors[o + 1] = ca.g * op
+          lineColors[o + 2] = ca.b * op
+          lineColors[o + 3] = cb.r * op
+          lineColors[o + 4] = cb.g * op
+          lineColors[o + 5] = cb.b * op
         }
         linePositionsAttribute.needsUpdate = true
         lineColorsAttribute.needsUpdate = true
