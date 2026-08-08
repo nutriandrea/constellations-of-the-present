@@ -55,7 +55,7 @@ body {
 }
 
 /* --- glass surface shared by overlays --- */
-#status,
+#status-bar,
 #presence,
 #code,
 #sound-toggle,
@@ -84,7 +84,7 @@ body {
   opacity: 1;
 }
 
-#status {
+#status-bar {
   position: fixed;
   top: 16px;
   left: 16px;
@@ -124,6 +124,7 @@ body {
   line-height: 7px;
   text-align: center;
   color: transparent;
+  background: #3a4160;
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
