@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella — nulla di grezzo lascia il dispositivo."
+      content="A shared sky built from anonymous moment-hashes. Every visitor becomes a star — nothing raw ever leaves the device."
     />
     <meta name="theme-color" content="#000000" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,9 +22,9 @@
       <canvas
         id="sky"
         role="img"
-        aria-label="Cielo condiviso di stelle dei momenti presenti. Ogni stella è il codice anonimo di un momento vissuto da chi osserva in tempo reale."
+        aria-label="A shared sky of present-moment stars. Each star is the anonymous code of a moment lived by someone watching in real time."
       ></canvas>
-      <video id="cam" autoplay muted playsinline aria-label="Anteprima della fotocamera, specchiata"></video>
+      <video id="cam" autoplay muted playsinline aria-label="Camera preview, mirrored"></video>
 
       <span class="reg reg-tl" aria-hidden="true"></span>
       <span class="reg reg-tr" aria-hidden="true"></span>
@@ -33,20 +33,20 @@
 
       <div id="status-bar">
         <span id="conn" aria-hidden="true"></span>
-        <span id="status">Caricamento cielo…</span>
+        <span id="status">Loading sky…</span>
       </div>
       <div id="presence"></div>
 
       <header id="masthead">
         <h1>Constellations<em>of the Present</em></h1>
-        <p>Osservatorio · rilevamento locale · nessuna cattura</p>
+        <p>Observatory · on-device sensing · no capture</p>
       </header>
 
       <div id="code" aria-live="polite"><span id="code-value"></span></div>
       <div id="edge-caption" aria-hidden="true">Andrea Cacioppo — MMXXVI</div>
 
-      <a id="about-link" href="/portfolio.html" aria-label="Informazioni sul progetto">Indice</a>
-      <button id="sound-toggle" type="button" hidden>Attiva suono ambientale</button>
+      <a id="about-link" href="/portfolio.html" aria-label="About this project">Index</a>
+      <button id="sound-toggle" type="button" hidden>Enable ambient sound</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

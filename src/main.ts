@@ -26,7 +26,7 @@ function setStatus(text: string): void {
 }
 
 function setPresence(count: number): void {
-  presenceEl.textContent = count > 0 ? `${count} ${count === 1 ? 'stella presente' : 'stelle presenti'}` : ''
+  presenceEl.textContent = count > 0 ? `${count} ${count === 1 ? 'star present' : 'stars present'}` : ''
 }
 
 function setConnection(state: 'connecting' | 'connected' | 'off'): void {
@@ -35,18 +35,20 @@ function setConnection(state: 'connecting' | 'connected' | 'off'): void {
 }
 
 const PUBLISH_INTERVAL_MS = 5_000
-/** Quanto spesso rinfrescare il cielo storico (ultime 24h). */
+/** How often the historical sky (last 24h) is refreshed. */
 const HISTORICAL_REFRESH_MS = 5 * 60_000
+/** Stillness before the interface withdraws and only the sky remains. */
+const IDLE_AFTER_MS = 4_000
 
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
 async function main(): Promise<void> {
   let sky: SkyHandles | null = null
   try {
-    // Code-splitting: three.js carica in un chunk separato.
+    // Code-splitting: three.js loads in its own chunk.
     sky = (await import('./sky/scene')).createSky(canvas)
   } catch {
-    setStatus('Grafica 3D non disponibile.')
+    setStatus('3D graphics unavailable.')
     return
   }
   sky.setReducedMotion(reducedMotionQuery.matches)
@@ -59,19 +61,19 @@ async function main(): Promise<void> {
 
   function refreshStatus(): void {
     if (!cameraReady) {
-      setStatus('Camera non disponibile — cielo in modalità presenza.')
+      setStatus('Camera unavailable — sky in presence mode.')
     } else if (!modelReady) {
-      setStatus('Modello AI non disponibile — cielo in modalità presenza.')
+      setStatus('Model unavailable — sky in presence mode.')
     } else if (!faceVisible) {
-      setStatus('Inquadra il volto per accendere la tua stella.')
+      setStatus('Look into the camera to light your star.')
     } else {
-      setStatus(geo.coarse === 'unknown' ? 'Cielo aperto.' : `Stella da ${geo.coarse} — cielo aperto.`)
+      setStatus(geo.coarse === 'unknown' ? 'Sky open.' : `Star from ${geo.coarse} — sky open.`)
     }
   }
 
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault()
-    setStatus('Contesto grafico perso — in ripristino…')
+    setStatus('Graphics context lost — restoring…')
   })
   canvas.addEventListener('webglcontextrestored', refreshStatus)
 
@@ -99,9 +101,9 @@ async function main(): Promise<void> {
   let lastRemoteStar: RemoteStar | null = null
   let momentSeq = 0
 
-  // Le variabili d'ambiente possono arrivare dal pannello di deploy con spazi o
-  // ritorni a capo incollati per errore: ripuliamo prima di usarle, altrimenti
-  // il WebSocket realtime viene rifiutato (apikey con %0A finale).
+  // Deploy panels can hand back env values with stray spaces or newlines
+  // pasted in by mistake: trim before use, otherwise the realtime WebSocket
+  // is rejected (apikey ending in %0A).
   const cleanEnv = (value: unknown): string | undefined => {
     const text = typeof value === 'string' ? value.trim() : ''
     return text.length > 0 ? text : undefined
@@ -162,9 +164,9 @@ async function main(): Promise<void> {
     })
   }
 
-  // Aggiorna colore/luminosità della stella (che resta la stessa per tutta la
-  // visita); niente re-publish/re-log, i peer la vedono cambiare colore con
-  // il heartbeat periodico.
+  // Updates colour/brightness of the star (which stays the same for the whole
+  // visit); no re-publish/re-log, peers see the colour change with the
+  // periodic heartbeat.
   function paintStar(reading: ExpressionReading): void {
     if (!currentMoment) return
     sky?.setStar({
@@ -194,7 +196,7 @@ async function main(): Promise<void> {
       hash: code,
       emotion: reading.emotion,
       confidence: Math.round(reading.confidence * 100) / 100,
-      // Date.now() (clock reale) per i peer; l'animazione locale usa performance.now().
+      // Date.now() (wall clock) for peers; local animation uses performance.now().
       birthTime: Date.now(),
     }
     publish(lastRemoteStar, now)
@@ -209,14 +211,14 @@ async function main(): Promise<void> {
         faceVisible = nextFace
         refreshStatus()
       }
-      // Senza volto non forziamo neutri nello smoother (un blink non deve
-      // spegnere l'emozione stabile); dipingiamo solo la stella neutra.
+      // Without a face we do not push neutrals into the smoother (a blink must
+      // not switch off a stable emotion); we only paint the neutral star.
       const reading = blendshapes
         ? smoother.push(readExpressionFromBlendshapes(blendshapes))
         : { emotion: 'neutral' as const, confidence: 0.2 }
-      // La stella nasce UNA volta, quando il volto viene inquadrato per la
-      // prima volta: codice, posizione e identità restano fissi per tutta la
-      // visita. L'emozione cambia solo il colore, mai la stella.
+      // The star is born ONCE, the first time the face is seen: code, position
+      // and identity stay fixed for the whole visit. Emotion only changes the
+      // colour, never the star.
       if (!currentMoment && blendshapes) {
         const seq = ++momentSeq
         void makeMomentHash(reading.emotion, reading.confidence, null, now - birthTime).then((moment) => {
@@ -234,8 +236,23 @@ async function main(): Promise<void> {
   refreshStatus()
   requestAnimationFrame(frame)
 
-  // Heartbeat presenza: ripubblica la stessa stella ogni 5s anche senza cambio
-  // di emozione, così i peer la mantengono viva oltre heartbeat di rete saltati.
+  // Immersion: after a few still seconds the interface withdraws and only the
+  // sky remains. It returns on the first move, touch or key.
+  let idleTimer: number | undefined
+  const wake = (): void => {
+    document.body.dataset.idle = 'false'
+    if (idleTimer !== undefined) window.clearTimeout(idleTimer)
+    idleTimer = window.setTimeout(() => {
+      document.body.dataset.idle = 'true'
+    }, IDLE_AFTER_MS)
+  }
+  for (const evt of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) {
+    window.addEventListener(evt, wake, { passive: true })
+  }
+  wake()
+
+  // Presence heartbeat: republish the same star every 5s even without an
+  // emotion change, so peers keep it alive across missed network beats.
   const heartbeatTimer = window.setInterval(() => {
     if (lastRemoteStar) channel.publish(lastRemoteStar)
   }, PUBLISH_INTERVAL_MS)
@@ -244,8 +261,8 @@ async function main(): Promise<void> {
     if (document.visibilityState === 'visible' && lastRemoteStar) channel.publish(lastRemoteStar)
   })
 
-  // Cielo storico: le stelle delle ultime 24h, campionate all'avvio e poi
-  // rinfrescate lentamente. Solo se il backend è configurato.
+  // Historical sky: stars from the last 24h, sampled at start and then slowly
+  // refreshed. Only when the backend is configured.
   let historicalTimer: number | undefined
   if (sink.kind !== 'noop') {
     const refreshHistorical = (): void => {
@@ -262,7 +279,7 @@ async function main(): Promise<void> {
   const ambient = createAmbientAudio({
     onStateChange(active) {
       soundToggle.setAttribute('aria-pressed', String(active))
-      soundToggle.textContent = active ? 'Silenzia suono ambientale' : 'Attiva suono ambientale'
+      soundToggle.textContent = active ? 'Mute ambient sound' : 'Enable ambient sound'
     },
   })
   soundToggle.hidden = false
@@ -271,7 +288,7 @@ async function main(): Promise<void> {
       ambient.stop()
     } else {
       void ambient.start().catch(() => {
-        setStatus('Microfono non disponibile — nessun suono ambientale.')
+        setStatus('Microphone unavailable — no ambient sound.')
       })
     }
   })
@@ -280,6 +297,7 @@ async function main(): Promise<void> {
     window.clearInterval(pruneTimer)
     window.clearInterval(heartbeatTimer)
     if (historicalTimer !== undefined) window.clearInterval(historicalTimer)
+    if (idleTimer !== undefined) window.clearTimeout(idleTimer)
     ambient.stop()
     stopCamera(video)
     channel.dispose()
@@ -288,6 +306,6 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  console.error('Avvio fallito:', error)
-  setStatus('Impossibile avviare il cielo.')
+  console.error('Startup failed:', error)
+  setStatus('Unable to start the sky.')
 })

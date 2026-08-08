@@ -1,0 +1,101 @@
+name: translate-portfolio
+
+on:
+  push:
+    branches: [feat/isea2026-constellations]
+    paths: ['.github/workflows/i18n-portfolio.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/isea2026-constellations
+      - name: Translate portfolio.html to English
+        run: |
+          python3 - <<'PY'
+          import re
+
+          path = 'public/portfolio.html'
+          src = open(path, encoding='utf-8').read()
+
+          pairs = [
+            ('<html lang="it">', '<html lang="en">'),
+            ('Constellations of the Present — Mondo', 'Constellations of the Present — World'),
+            ('Constellations of the Present di Andrea Cacioppo: un cielo condiviso costruito da moment-hash anonimi. Rilevamento on-device, nessuna cattura.', 'Constellations of the Present by Andrea Cacioppo: a shared sky built from anonymous moment-hashes. On-device sensing, no capture.'),
+            ('Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella.', 'A shared sky built from anonymous moment-hashes. Every visitor becomes a star.'),
+            ('Opera web interattiva · MMXXVI', 'Interactive web artwork · MMXXVI'),
+            ('Un cielo condiviso costruito da moment-hash anonimi. Ogni visitatore diventa una stella — e nulla di grezzo lascia mai il dispositivo.', 'A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever leaves the device.'),
+            ('Entra nel mondo', 'Enter the world'),
+            ('COTP / Osservatorio', 'COTP / Observatory'),
+            ('Apri il menu', 'Open the menu'),
+            ('Entra nel cielo', 'Enter the sky'),
+            ('>Concetto<', '>Concept<'),
+            ('>Tecnica<', '>Technical<'),
+            ('>Autore<', '>Author<'),
+            ('Concetto <span>01</span>', 'Concept <span>01</span>'),
+            ('Tecnica <span>03</span>', 'Technical <span>03</span>'),
+            ('Autore <span>04</span>', 'Author <span>04</span>'),
+            ('<b>Cielo condiviso</b>', '<b>Shared sky</b>'),
+            ('<b>Nessuna cattura</b>', '<b>No capture</b>'),
+            ('<b>Presenza viva</b>', '<b>Live presence</b>'),
+            ('<span>TTL breve</span>', '<span>Short TTL</span>'),
+            ('Il mondo<em>del presente</em>', 'The world<em>of the present</em>'),
+            ('Lat — / Lon — / Ora locale', 'Lat — / Lon — / Local time'),
+            ('Andrea Cacioppo · Milano', 'Andrea Cacioppo · Milan'),
+            ('Trascina per ruotare', 'Drag to rotate'),
+            ('01 / Concetto', '01 / Concept'),
+            ('Il cielo è la prima superficie condivisa.', 'The sky is the first shared surface.'),
+            ("Le stesse stelle per tutti, ovunque. <em>Constellations of the Present</em> ricostruisce quella superficie per l'età della rete: un cielo collettivo che esiste solo nel presente vivo, costruito da momenti invece che da profili.", 'The same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds that surface for the network age: a collective sky that exists only in the living present, built from moments instead of profiles.'),
+            ('La presenza di ogni visitatore viene rilevata interamente sul suo dispositivo. La camera legge espressione, attenzione e coinvolgimento in tempo reale; la lettura viene quantizzata e ridotta subito a un hash non reversibile — un "moment-hash" — con un nonce casuale. Solo quel codice anonimo lascia il dispositivo.', 'Each visitor\u2019s presence is sensed entirely on their own device. The camera reads expression, attention and engagement in real time; the reading is quantised and immediately reduced to a non-reversible hash — a "moment-hash" — with a random nonce. Only that anonymous code leaves the device.'),
+            ('Nulla di grezzo viene trasmesso, salvato o registrato.', 'Nothing raw is transmitted, stored or logged.'),
+            ('Rilevamento on-device', 'On-device sensing'),
+            ('Il face tracking gira interamente nel browser e viene scartato fotogramma per fotogramma. Nessuna immagine o video lascia mai il dispositivo.', 'Face tracking runs entirely in the browser and is discarded frame by frame. No image or video ever leaves the device.'),
+            ('I valori quantizzati di espressione e coinvolgimento vengono hashati con un nonce casuale. Il risultato è anonimo e non reversibile.', 'Quantised expression and engagement values are hashed with a random nonce. The result is anonymous and non-reversible.'),
+            ('Audio solo su consenso', 'Opt-in audio only'),
+            ('Il microfono alimenta soltanto un livello audio dal vivo dentro un drone ambientale. Non registra, non trasmette, non esce dal browser.', 'The microphone feeds only a live audio level into an ambient drone. It never records, never transmits, never leaves the browser.'),
+            ('03 / Tecnica', '03 / Technical'),
+            ('Uno stack privacy-by-design.', 'A privacy-by-design stack.'),
+            ('derivazione del seme <em>hash</em>', 'seed derivation <em>hash</em>'),
+            ('Topologia a vicini mutui (k-NN) <em>grafo</em>', 'Mutual k-nearest-neighbour topology <em>graph</em>'),
+            ('Archi di Bézier con rivelazione progressiva <em>disegno</em>', 'Bézier arcs with progressive reveal <em>drawing</em>'),
+            ('Gradiente emotivo globale, corretto in gamma <em>colore</em>', 'Global emotional gradient, gamma corrected <em>colour</em>'),
+            ('Realtime anonimo — nessun dato personale <em>rete</em>', 'Anonymous realtime — no personal data <em>network</em>'),
+            ('Gioia → Sorpresa → Rabbia → Tristezza → Calma → Neutro : un unico gradiente, sei letture', 'Joy → Surprise → Anger → Sadness → Calm → Neutral : one gradient, six readings'),
+            ('04 / Autore', '04 / Author'),
+            ('"Le mie opere sono pensate per essere vissute dal vivo, al presente, senza lasciare nulla dietro di sé."', '"My works are meant to be lived in the present, leaving nothing behind."'),
+            ("Designer e creative developer italiano, con base a Milano, studia al Politecnico di Milano. La sua pratica sta all'incrocio fra interaction design, codice creativo e privacy-by-design, esplorando come i sistemi in rete possano creare intimità e collettività senza sorveglianza.", 'Italian designer and creative developer based in Milan, studying at Politecnico di Milano. His practice sits at the intersection of interaction design, creative code and privacy-by-design, exploring how networked systems can create intimacy and collectivity without surveillance.'),
+            ('Guarda in alto.', 'Look up.'),
+            ('La tua stella appare solo mentre sei presente — e scompare nel momento in cui distogli lo sguardo.', 'Your star appears only while you are present — and disappears the moment you look away.'),
+            ('ISEA 2026 · Opera web interattiva', 'ISEA 2026 · Interactive web artwork'),
+            ("toLocaleTimeString('it-IT')", "toLocaleTimeString('en-GB')"),
+            ('href="#concetto"', 'href="#concept"'),
+            ('id="concetto"', 'id="concept"'),
+            ('href="#tecnica"', 'href="#technical"'),
+            ('id="tecnica"', 'id="technical"'),
+            ('href="#autore"', 'href="#author"'),
+            ('id="autore"', 'id="author"'),
+          ]
+
+          for it, en in pairs:
+              pattern = r'\s+'.join(re.escape(part) for part in it.split())
+              new, count = re.subn(pattern, lambda m, en=en: en, src)
+              if count == 0:
+                  print('MISS:', it[:60])
+              src = new
+
+          open(path, 'w', encoding='utf-8').write(src)
+          left = re.findall(r'[A-Za-z]*[àèéìòù][A-Za-z]*', src)
+          print('remaining accented words:', left[:20])
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add public/portfolio.html
+          git diff --cached --quiet || git commit -m 'i18n: translate world page to English'
+          git push
