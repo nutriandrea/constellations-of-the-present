@@ -75,9 +75,16 @@ async function main(): Promise<void> {
   let currentMoment: { code: string; seed: string } | null = null
   let momentSeq = 0
 
+  // Le variabili d'ambiente possono arrivare dal pannello di deploy con spazi o
+  // ritorni a capo incollati per errore: ripuliamo prima di usarle, altrimenti
+  // il WebSocket realtime viene rifiutato (apikey con %0A finale).
+  const cleanEnv = (value: unknown): string | undefined => {
+    const text = typeof value === 'string' ? value.trim() : ''
+    return text.length > 0 ? text : undefined
+  }
   const env = {
-    url: import.meta.env.VITE_SUPABASE_URL as string | undefined,
-    key: import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined,
+    url: cleanEnv(import.meta.env.VITE_SUPABASE_URL),
+    key: cleanEnv(import.meta.env.VITE_SUPABASE_ANON_KEY),
   }
   const channel = createStarChannel(env)
   const registry = createStarRegistry(new Set([channel.ownId]))
