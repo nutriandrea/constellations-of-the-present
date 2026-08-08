@@ -48,4 +48,14 @@ describe('prune', () => {
     expect(removed).not.toContain('p1')
     expect(r.list()).toHaveLength(1)
   })
+
+  it('keeps a live star visible across the default ttl between heartbeats', () => {
+    const r = createStarRegistry()
+    r.apply(star('p1', 0), 0)
+    // heartbeat every 5s -> a 20s gap is still inside the default ttl (30s)
+    r.apply(star('p1', 0), 20_000)
+    const removed = prune(r, 20_100)
+    expect(removed).not.toContain('p1')
+    expect(r.list()).toHaveLength(1)
+  })
 })

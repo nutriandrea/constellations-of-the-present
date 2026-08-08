@@ -1,63 +1,73 @@
 import { describe, it, expect } from 'vitest'
-import { readExpression } from './expression'
+import { readExpressionFromBlendshapes } from './expression'
 
-function face(mouth: Partial<Record<number, number[]>>): number[][] {
-  const landmarks: number[][] = []
-  for (let i = 0; i < 478; i++) landmarks.push([0.5, 0.5, 0])
-  for (const [i, pt] of Object.entries(mouth)) {
-    if (pt) landmarks[Number(i)] = pt
-  }
-  return landmarks
-}
+const smile = (v: number) => ({ mouthSmileLeft: v, mouthSmileRight: v })
 
-describe('readExpression', () => {
-  it('returns low-confidence neutral for empty input', () => {
-    const r = readExpression([])
+describe('readExpressionFromBlendshapes', () => {
+  it('returns low-confidence neutral when nothing is activated', () => {
+    const r = readExpressionFromBlendshapes({})
     expect(r.emotion).toBe('neutral')
     expect(r.confidence).toBeLessThan(0.5)
   })
 
-  it('detects joy from raised lip corners and closed mouth', () => {
-    const lm = face({
-      61: [0.30, 0.42],
-      291: [0.70, 0.42],
-      13: [0.50, 0.55],
-      14: [0.50, 0.56],
-    })
-    // corners above top lip => smile ratio > 0.55
-    expect(readExpression(lm).emotion).toBe('joy')
+  it('treats tiny blendshape noise as neutral', () => {
+    const r = readExpressionFromBlendshapes(smile(0.05))
+    expect(r.emotion).toBe('neutral')
   })
 
-  it('detects surprise from a wide-open mouth', () => {
-    const lm = face({
-      61: [0.40, 0.5],
-      291: [0.60, 0.5],
-      13: [0.50, 0.30],
-      14: [0.50, 0.85],
+  it('detects joy from a wide smile with squinted eyes', () => {
+    const r = readExpressionFromBlendshapes({
+      ...smile(0.9),
+      eyeSquintLeft: 0.6,
+      eyeSquintRight: 0.6,
+      jawOpen: 0.1,
     })
-    expect(readExpression(lm).emotion).toBe('surprise')
+    expect(r.emotion).toBe('joy')
+    expect(r.confidence).toBeGreaterThan(0.5)
   })
 
-  it('detects anger from dropped brows', () => {
-    const lm = face({
-      21: [0.40, 0.70],
-      22: [0.60, 0.70],
-      33: [0.45, 0.20],
-      61: [0.42, 0.60],
-      291: [0.58, 0.60],
-      13: [0.50, 0.62],
-      14: [0.50, 0.63],
+  it('detects surprise from an open jaw with wide eyes', () => {
+    const r = readExpressionFromBlendshapes({
+      jawOpen: 0.8,
+      eyeWideLeft: 0.5,
+      eyeWideRight: 0.5,
+      browInnerUp: 0.5,
     })
-    expect(readExpression(lm).emotion).toBe('anger')
+    expect(r.emotion).toBe('surprise')
+  })
+
+  it('detects anger from lowered brows and pressed lips', () => {
+    const r = readExpressionFromBlendshapes({
+      browDownLeft: 0.7,
+      browDownRight: 0.7,
+      mouthPressLeft: 0.6,
+      mouthPressRight: 0.6,
+    })
+    expect(r.emotion).toBe('anger')
+  })
+
+  it('detects sadness from frowning and raised inner brows', () => {
+    const r = readExpressionFromBlendshapes({
+      mouthFrownLeft: 0.6,
+      mouthFrownRight: 0.6,
+      browInnerUp: 0.4,
+    })
+    expect(r.emotion).toBe('sadness')
   })
 
   it('detects calm from a gentle smile', () => {
-    const lm = face({
-      61: [0.35, 0.54],
-      291: [0.65, 0.54],
-      13: [0.50, 0.58],
-      14: [0.50, 0.59],
-    })
-    expect(readExpression(lm).emotion).toBe('calm')
+    const r = readExpressionFromBlendshapes(smile(0.3))
+    expect(r.emotion).toBe('calm')
+  })
+
+  it('reads an asymmetric smile from a single lip corner', () => {
+    const r = readExpressionFromBlendshapes({ mouthSmileLeft: 0.9 })
+    expect(r.emotion).toBe('joy')
+  })
+
+  it('always returns a confidence within [0, 1]', () => {
+    const r = readExpressionFromBlendshapes({ jawOpen: 1, eyeWideLeft: 1, eyeWideRight: 1, browInnerUp: 1 })
+    expect(r.confidence).toBeGreaterThanOrEqual(0)
+    expect(r.confidence).toBeLessThanOrEqual(1)
   })
 })

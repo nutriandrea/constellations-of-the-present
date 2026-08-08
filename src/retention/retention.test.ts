@@ -88,6 +88,53 @@ describe('createRetentionSink', () => {
   })
 })
 
+describe('loadRecentStars', () => {
+  it('noop sink resolves to an empty list', async () => {
+    const sink = createRetentionSink({})
+    await expect(sink.loadRecentStars()).resolves.toEqual([])
+  })
+
+  it('supabase sink requests a sample and maps valid rows', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        { hash: 'a'.repeat(64), emotion: 'joy', confidence: 0.7, ts: '2026-08-01T00:00:00.000Z' },
+        { hash: 'not-a-hash', emotion: 'anger', confidence: 0.5, ts: '2026-08-01T00:00:00.000Z' },
+      ],
+      error: null,
+    })
+    const fakeClient = { rpc } as unknown as Pick<SupabaseClient, 'rpc'>
+    const sink = createRetentionSink({ url: 'https://x.supabase.co', key: 'abc' }, fakeClient)
+    const stars = await sink.loadRecentStars(120, 30)
+    expect(rpc).toHaveBeenCalledWith('get_recent_stars', { p_limit: 120, p_max_age_days: 30 })
+    expect(stars).toHaveLength(1)
+    expect(stars[0]).toMatchObject({ hash: 'a'.repeat(64), emotion: 'joy', confidence: 0.7 })
+    expect(typeof stars[0].ts).toBe('number')
+  })
+
+  it('supabase sink resolves to an empty list when the rpc fails', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'boom' } })
+    const fakeClient = { rpc } as unknown as Pick<SupabaseClient, 'rpc'>
+    const sink = createRetentionSink({ url: 'https://x.supabase.co', key: 'abc' }, fakeClient)
+    await expect(sink.loadRecentStars()).resolves.toEqual([])
+  })
+
+  it('drops rows with invalid emotion or confidence', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        { hash: 'a'.repeat(64), emotion: 'giggle', confidence: 0.7, ts: '2026-08-01T00:00:00.000Z' },
+        { hash: 'b'.repeat(64), emotion: 'joy', confidence: 2.5, ts: '2026-08-01T00:00:00.000Z' },
+        { hash: 'c'.repeat(64), emotion: 'calm', confidence: 0.5, ts: '2026-08-01T00:00:00.000Z' },
+      ],
+      error: null,
+    })
+    const fakeClient = { rpc } as unknown as Pick<SupabaseClient, 'rpc'>
+    const sink = createRetentionSink({ url: 'https://x.supabase.co', key: 'abc' }, fakeClient)
+    const stars = await sink.loadRecentStars()
+    expect(stars).toHaveLength(1)
+    expect(stars[0].hash).toBe('c'.repeat(64))
+  })
+})
+
 describe('createRetentionGate', () => {
   it('passes the first record, blocks within the interval', () => {
     const gate = createRetentionGate(5_000)
