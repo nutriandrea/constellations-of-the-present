@@ -7,6 +7,7 @@ import { requestCoarseGeo } from './geo/geo'
 import { createStarChannel } from './net/channel'
 import { createStarRegistry, prune, REMOTE_TTL_MS } from './sky/presence'
 import { createRetentionSink, createRetentionGate } from './retention/retention'
+import { createAmbientAudio } from './audio/ambient'
 import type { RemoteStar } from './net/StarChannel'
 import type { SkyHandles } from './sky/scene'
 
@@ -16,6 +17,7 @@ const presenceEl = document.getElementById('presence') as HTMLDivElement
 const connEl = document.getElementById('conn') as HTMLDivElement
 const video = document.getElementById('cam') as HTMLVideoElement
 const codeEl = document.getElementById('code') as HTMLSpanElement
+const soundToggle = document.getElementById('sound-toggle') as HTMLButtonElement
 
 function setStatus(text: string): void {
   statusEl.textContent = text
@@ -172,8 +174,26 @@ async function main(): Promise<void> {
 
   window.addEventListener('resize', () => sky.resize(window.innerWidth, window.innerHeight))
 
+  const ambient = createAmbientAudio({
+    onStateChange(active) {
+      soundToggle.setAttribute('aria-pressed', String(active))
+      soundToggle.textContent = active ? 'Silenzia suono ambientale' : 'Attiva suono ambientale'
+    },
+  })
+  soundToggle.hidden = false
+  soundToggle.addEventListener('click', () => {
+    if (ambient.active) {
+      ambient.stop()
+    } else {
+      void ambient.start().catch(() => {
+        setStatus('Microfono non disponibile — nessun suono ambientale.')
+      })
+    }
+  })
+
   window.addEventListener('beforeunload', () => {
     window.clearInterval(pruneTimer)
+    ambient.stop()
     channel.dispose()
     sink.dispose()
   })
