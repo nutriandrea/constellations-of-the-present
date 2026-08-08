@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@300;400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Work+Sans:wght@300;400&display=swap"
       rel="stylesheet"
     />
     <title>Constellations of the Present</title>
@@ -26,10 +26,9 @@
       ></canvas>
       <video id="cam" autoplay muted playsinline aria-label="Camera preview, mirrored"></video>
 
-      <span class="reg reg-tl" aria-hidden="true"></span>
-      <span class="reg reg-tr" aria-hidden="true"></span>
-      <span class="reg reg-bl" aria-hidden="true"></span>
-      <span class="reg reg-br" aria-hidden="true"></span>
+      <header id="masthead">
+        <h1>Constellations of the Present</h1>
+      </header>
 
       <div id="status-bar">
         <span id="conn" aria-hidden="true"></span>
@@ -37,16 +36,10 @@
       </div>
       <div id="presence"></div>
 
-      <header id="masthead">
-        <h1>Constellations<em>of the Present</em></h1>
-        <p>Observatory · on-device sensing · no capture</p>
-      </header>
-
       <div id="code" aria-live="polite"><span id="code-value"></span></div>
-      <div id="edge-caption" aria-hidden="true">Andrea Cacioppo — MMXXVI</div>
 
-      <a id="about-link" href="/portfolio.html" aria-label="About this project">Index</a>
-      <button id="sound-toggle" type="button" hidden>Enable ambient sound</button>
+      <a id="about-link" href="/portfolio.html" aria-label="About this project">About</a>
+      <button id="sound-toggle" type="button" hidden>Sound</button>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
