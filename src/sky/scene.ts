@@ -160,7 +160,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   scene.add(lines)
 
   let current: StarState | null = null
-  let ownPosition = new THREE.Vector3(0, 0, 0)
+  const ownPosition = new THREE.Vector3(0, 0, 0)
   let remote: TrackedStar[] = []
   let reducedMotion = false
   const positionCache = new Map<string, { x: number; y: number; z: number }>()

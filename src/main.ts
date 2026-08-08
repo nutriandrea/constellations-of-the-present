@@ -1,5 +1,5 @@
 import './style.css'
-import { FaceLandmarker } from '@mediapipe/tasks-vision'
+import type { FaceLandmarker } from '@mediapipe/tasks-vision'
 import { initFaceLandmarker, detectFace, landmarksFromResult, requestCamera } from './sensing/face'
 import { readExpression, type ExpressionReading } from './sensing/expression'
 import { makeMomentHash } from './moment/hash'
