@@ -1,12 +1,14 @@
 import './style.css'
 import type { FaceLandmarker } from '@mediapipe/tasks-vision'
-import { initFaceLandmarker, detectFace, landmarksFromResult, requestCamera, stopCamera } from './sensing/face'
-import { readExpression, type ExpressionReading } from './sensing/expression'
+import { initFaceLandmarker, detectFace, blendshapesFromResult, requestCamera, stopCamera } from './sensing/face'
+import { readExpressionFromBlendshapes, type ExpressionReading } from './sensing/expression'
+import { createEmotionSmoother } from './sensing/smoother'
 import { makeMomentHash } from './moment/hash'
 import { requestCoarseGeo } from './geo/geo'
 import { createStarChannel } from './net/channel'
 import { createStarRegistry, prune, REMOTE_TTL_MS } from './sky/presence'
 import { createRetentionSink, createRetentionGate } from './retention/retention'
+import { projectRecentStars } from './sky/historical'
 import { createAmbientAudio } from './audio/ambient'
 import type { RemoteStar } from './net/StarChannel'
 import type { SkyHandles } from './sky/scene'
@@ -33,6 +35,8 @@ function setConnection(state: 'connecting' | 'connected' | 'off'): void {
 }
 
 const PUBLISH_INTERVAL_MS = 5_000
+/** Quanto spesso rinfrescare il cielo storico (ultime 24h). */
+const HISTORICAL_REFRESH_MS = 5 * 60_000
 
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
@@ -48,31 +52,52 @@ async function main(): Promise<void> {
   sky.setReducedMotion(reducedMotionQuery.matches)
   reducedMotionQuery.addEventListener('change', (event) => sky?.setReducedMotion(event.matches))
 
+  let cameraReady = false
+  let modelReady = false
+  let faceVisible = false
+  let geo: { coarse: string } = { coarse: 'unknown' }
+
+  function refreshStatus(): void {
+    if (!cameraReady) {
+      setStatus('Camera non disponibile — cielo in modalità presenza.')
+    } else if (!modelReady) {
+      setStatus('Modello AI non disponibile — cielo in modalità presenza.')
+    } else if (!faceVisible) {
+      setStatus('Inquadra il volto per accendere la tua stella.')
+    } else {
+      setStatus(geo.coarse === 'unknown' ? 'Cielo aperto.' : `Stella da ${geo.coarse} — cielo aperto.`)
+    }
+  }
+
   canvas.addEventListener('webglcontextlost', (event) => {
     event.preventDefault()
     setStatus('Contesto grafico perso — in ripristino…')
   })
-  canvas.addEventListener('webglcontextrestored', () => {
-    if (geo?.coarse === 'unknown' || !landmarker) {
-      setStatus(landmarker ? 'Cielo aperto.' : 'Camera o modello AI non disponibili — cielo in modalità presenza.')
-    } else {
-      setStatus(`Stella da ${geo.coarse} — cielo aperto.`)
-    }
-  })
+  canvas.addEventListener('webglcontextrestored', refreshStatus)
 
   let landmarker: FaceLandmarker | null = null
   try {
     await requestCamera(video)
-    landmarker = await initFaceLandmarker()
+    cameraReady = true
   } catch {
-    stopCamera(video)
-    setStatus('Camera o modello AI non disponibili — cielo in modalità presenza.')
+    cameraReady = false
+  }
+  if (cameraReady) {
+    try {
+      landmarker = await initFaceLandmarker()
+      modelReady = true
+    } catch {
+      modelReady = false
+      stopCamera(video)
+    }
   }
 
-  const geo = await requestCoarseGeo()
+  const resolvedGeo = await requestCoarseGeo()
+  geo = resolvedGeo
   const birthTime = performance.now()
   let lastStateKey = ''
   let currentMoment: { code: string; seed: string } | null = null
+  let lastRemoteStar: RemoteStar | null = null
   let momentSeq = 0
 
   // Le variabili d'ambiente possono arrivare dal pannello di deploy con spazi o
@@ -103,6 +128,7 @@ async function main(): Promise<void> {
     })
   }
 
+  const smoother = createEmotionSmoother()
   let lastPublishedAt = 0
 
   function publish(star: RemoteStar, now: number): void {
@@ -158,24 +184,31 @@ async function main(): Promise<void> {
       hash: code,
     })
     codeEl.textContent = code.slice(0, 12)
-    publish(
-      {
-        id: channel.ownId,
-        hash: code,
-        emotion: reading.emotion,
-        confidence: Math.round(reading.confidence * 100) / 100,
-        // Date.now() (clock reale) per i peer; l'animazione locale usa performance.now().
-        birthTime: Date.now(),
-      },
-      now,
-    )
+    lastRemoteStar = {
+      id: channel.ownId,
+      hash: code,
+      emotion: reading.emotion,
+      confidence: Math.round(reading.confidence * 100) / 100,
+      // Date.now() (clock reale) per i peer; l'animazione locale usa performance.now().
+      birthTime: Date.now(),
+    }
+    publish(lastRemoteStar, now)
     logRetention(moment, reading, geo.coarse !== 'unknown', now)
   }
 
   function frame(now: number): void {
     if (landmarker) {
-      const result = landmarksFromResult(detectFace(landmarker, video, now))
-      const reading = result ? readExpression(result) : { emotion: 'neutral' as const, confidence: 0.2 }
+      const blendshapes = blendshapesFromResult(detectFace(landmarker, video, now))
+      const nextFace = blendshapes !== null
+      if (nextFace !== faceVisible) {
+        faceVisible = nextFace
+        refreshStatus()
+      }
+      // Senza volto non forziamo neutri nello smoother (un blink non deve
+      // spegnere l'emozione stabile); dipingiamo solo la stella neutra.
+      const reading = blendshapes
+        ? smoother.push(readExpressionFromBlendshapes(blendshapes))
+        : { emotion: 'neutral' as const, confidence: 0.2 }
       const key = `${reading.emotion}:${Math.round(reading.confidence * 4) / 4}`
       if (key !== lastStateKey) {
         lastStateKey = key
@@ -192,11 +225,31 @@ async function main(): Promise<void> {
     requestAnimationFrame(frame)
   }
 
-  if (landmarker) {
-    setStatus(geo.coarse === 'unknown' ? 'Cielo aperto.' : `Stella da ${geo.coarse} — cielo aperto.`)
-  }
-  // Se degraded (landmarker null), mantiene il messaggio "Camera o modello AI…" già mostrato.
+  refreshStatus()
   requestAnimationFrame(frame)
+
+  // Heartbeat presenza: ripubblica la stessa stella ogni 5s anche senza cambio
+  // di emozione, così i peer la mantengono viva oltre heartbeat di rete saltati.
+  const heartbeatTimer = window.setInterval(() => {
+    if (lastRemoteStar) channel.publish(lastRemoteStar)
+  }, PUBLISH_INTERVAL_MS)
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && lastRemoteStar) channel.publish(lastRemoteStar)
+  })
+
+  // Cielo storico: le stelle delle ultime 24h, campionate all'avvio e poi
+  // rinfrescate lentamente. Solo se il backend è configurato.
+  let historicalTimer: number | undefined
+  if (sink.kind !== 'noop') {
+    const refreshHistorical = (): void => {
+      void sink.loadRecentStars().then((stars) => {
+        sky?.setHistoricalStars(projectRecentStars(stars, Date.now()))
+      })
+    }
+    refreshHistorical()
+    historicalTimer = window.setInterval(refreshHistorical, HISTORICAL_REFRESH_MS)
+  }
 
   window.addEventListener('resize', () => sky?.resize(window.innerWidth, window.innerHeight))
 
@@ -219,6 +272,8 @@ async function main(): Promise<void> {
 
   window.addEventListener('beforeunload', () => {
     window.clearInterval(pruneTimer)
+    window.clearInterval(heartbeatTimer)
+    if (historicalTimer !== undefined) window.clearInterval(historicalTimer)
     ambient.stop()
     stopCamera(video)
     channel.dispose()

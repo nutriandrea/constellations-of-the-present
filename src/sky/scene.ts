@@ -7,6 +7,7 @@ import { starSizeForDuration } from './star'
 import { EMOTION_PALETTE, mixGamma } from './palette'
 import type { StarState } from './star'
 import type { EmotionBucket } from '../sensing/expression'
+import type { HistoricalStar } from './historical'
 import type { TrackedStar } from './presence'
 import { REMOTE_TTL_MS } from './presence'
 import { hashToPosition } from './remotePosition'
@@ -22,6 +23,8 @@ export interface SkyHandles {
   update: (now: number) => void
   setStar: (star: StarState | null) => void
   setRemoteStars: (stars: TrackedStar[]) => void
+  /** Stelle storiche (ultime 24h): layer più tenue, fuori dalla costellazione live. */
+  setHistoricalStars: (stars: HistoricalStar[]) => void
   resize: (width: number, height: number) => void
   setReducedMotion: (reduced: boolean) => void
   /** Ambiente percepito dello schermo: alza il contrasto dei fili sul chiaro. */
@@ -215,6 +218,9 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   const fading: { sprite: StarSprite; started: number }[] = []
   const pool: StarSprite[] = []
 
+  // Historical stars (ultime 24h): layer statico e tenue, popolato una volta.
+  const historicalSprites: StarSprite[] = []
+
   function acquireSprite(): StarSprite {
     const star = pool.pop()
     if (star) return star
@@ -334,6 +340,21 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     },
     setRemoteStars(stars: TrackedStar[]) {
       remote = stars
+    },
+    setHistoricalStars(stars: HistoricalStar[]) {
+      for (const sprite of historicalSprites) releaseSprite(sprite)
+      historicalSprites.length = 0
+      for (const star of stars) {
+        const sprite = acquireSprite()
+        applyBucket(sprite, star.emotion)
+        const pos = positionFor(star.hash)
+        sprite.sprite.position.set(pos.x, pos.y, pos.z)
+        // Più tenue delle presenze live: solo un ricordo, non un vicino.
+        sprite.sprite.scale.setScalar(0.34)
+        sprite.material.opacity = 0.28 + star.confidence * 0.2
+        sprite.sprite.visible = true
+        historicalSprites.push(sprite)
+      }
     },
     setReducedMotion(reduced: boolean) {
       reducedMotion = reduced

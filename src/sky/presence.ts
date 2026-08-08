@@ -1,7 +1,8 @@
 import type { RemoteStar } from '../net/StarChannel'
 
 // Deve superare il publish interval (5s) per evitare flicker dei remoti.
-export const REMOTE_TTL_MS = 10_000
+// 30s con heartbeat a 5s: una stella sopravvive ad almeno un heartbeat mancato.
+export const REMOTE_TTL_MS = 30_000
 export const MAX_REMOTE_STARS = 60
 
 export interface TrackedStar extends RemoteStar {
