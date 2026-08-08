@@ -95,7 +95,6 @@ async function main(): Promise<void> {
   const resolvedGeo = await requestCoarseGeo()
   geo = resolvedGeo
   const birthTime = performance.now()
-  let lastStateKey = ''
   let currentMoment: { code: string; seed: string } | null = null
   let lastRemoteStar: RemoteStar | null = null
   let momentSeq = 0
@@ -163,7 +162,9 @@ async function main(): Promise<void> {
     })
   }
 
-  // Aggiorna il colore/luminosità live; senza re-publish/re-log (solo a cambio di key).
+  // Aggiorna colore/luminosità della stella (che resta la stessa per tutta la
+  // visita); niente re-publish/re-log, i peer la vedono cambiare colore con
+  // il heartbeat periodico.
   function paintStar(reading: ExpressionReading): void {
     if (!currentMoment) return
     sky?.setStar({
@@ -172,6 +173,10 @@ async function main(): Promise<void> {
       birthTime,
       hash: currentMoment.code,
     })
+    if (lastRemoteStar) {
+      lastRemoteStar.emotion = reading.emotion
+      lastRemoteStar.confidence = Math.round(reading.confidence * 100) / 100
+    }
   }
 
   function applyMoment(moment: { code: string; seed: string }, reading: ExpressionReading, now: number): void {
@@ -209,9 +214,10 @@ async function main(): Promise<void> {
       const reading = blendshapes
         ? smoother.push(readExpressionFromBlendshapes(blendshapes))
         : { emotion: 'neutral' as const, confidence: 0.2 }
-      const key = `${reading.emotion}:${Math.round(reading.confidence * 4) / 4}`
-      if (key !== lastStateKey) {
-        lastStateKey = key
+      // La stella nasce UNA volta, quando il volto viene inquadrato per la
+      // prima volta: codice, posizione e identità restano fissi per tutta la
+      // visita. L'emozione cambia solo il colore, mai la stella.
+      if (!currentMoment && blendshapes) {
         const seq = ++momentSeq
         void makeMomentHash(reading.emotion, reading.confidence, null, now - birthTime).then((moment) => {
           if (seq !== momentSeq) return

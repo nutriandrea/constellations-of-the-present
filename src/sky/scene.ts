@@ -10,7 +10,7 @@ import type { EmotionBucket } from '../sensing/expression'
 import type { HistoricalStar } from './historical'
 import type { TrackedStar } from './presence'
 import { REMOTE_TTL_MS } from './presence'
-import { hashToPosition } from './remotePosition'
+import { hashToPosition, safeSkyRadius } from './remotePosition'
 import { buildLines } from './connections'
 import { createLinkAnimator } from './constellation'
 import { arcPoint, drawReveal, keySeed, pulse, pulsePhase, taper } from './arc'
@@ -80,6 +80,11 @@ function mixColors(target: THREE.Color, a: THREE.Color, b: THREE.Color, t: numbe
 
 const STARFIELD_COUNT = 1200
 const STARFIELD_RADIUS = 55
+
+/** Dimensioni medie delle stelle: ridotte per non sovrastare il cielo. */
+const OWN_STAR_BASE_SIZE = 0.36
+const REMOTE_STAR_SIZE = 0.33
+const HISTORICAL_STAR_SIZE = 0.24
 
 interface StarSprite {
   sprite: THREE.Sprite
@@ -199,7 +204,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   // Own star — dedicated material instance (bucket materials are shared with remotes)
   const ownMaterial = bucketMaterials.get('neutral')!.clone()
   const ownStar = new THREE.Sprite(ownMaterial)
-  ownStar.scale.setScalar(0.55)
+  ownStar.scale.setScalar(OWN_STAR_BASE_SIZE)
   // Alone della propria stella: un cerchio sottile e discreto, non un anello
   // grigio che taglia il cielo.
   const ownRingMaterial = new THREE.MeshBasicMaterial({
@@ -220,6 +225,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
 
   // Historical stars (ultime 24h): layer statico e tenue, popolato una volta.
   const historicalSprites: StarSprite[] = []
+  let historicalStars: HistoricalStar[] = []
 
   function acquireSprite(): StarSprite {
     const star = pool.pop()
@@ -249,6 +255,23 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     star.material.depthWrite = false
     star.material.needsUpdate = true
     star.sprite.material = star.material
+  }
+
+  /** Popola (o riposiziona, dopo un resize) il layer storico delle 24 ore. */
+  function placeHistoricalStars(): void {
+    for (const sprite of historicalSprites) releaseSprite(sprite)
+    historicalSprites.length = 0
+    for (const star of historicalStars) {
+      const sprite = acquireSprite()
+      applyBucket(sprite, star.emotion)
+      const pos = positionFor(star.hash)
+      sprite.sprite.position.set(pos.x, pos.y, pos.z)
+      // Più tenue delle presenze live: solo un ricordo, non un vicino.
+      sprite.sprite.scale.setScalar(HISTORICAL_STAR_SIZE)
+      sprite.material.opacity = 0.28 + star.confidence * 0.2
+      sprite.sprite.visible = true
+      historicalSprites.push(sprite)
+    }
   }
 
   // Connections (buffers riusati, allocati una volta)
@@ -299,11 +322,19 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
   let lastFrame = 0
   let lastTopology = 0
   const positionCache = new Map<string, { x: number; y: number; z: number }>()
+  // Raggio della sfera delle stelle: calcolato dalla forma dello schermo così
+  // ogni stella resta sempre dentro la cornice, senza sporgere.
+  let skyRadius = safeSkyRadius(camera.aspect)
+  let cachedRadius = skyRadius
 
   function positionFor(hash: string): { x: number; y: number; z: number } {
+    if (skyRadius !== cachedRadius) {
+      positionCache.clear()
+      cachedRadius = skyRadius
+    }
     let pos = positionCache.get(hash)
     if (!pos) {
-      pos = hashToPosition(hash)
+      pos = hashToPosition(hash, skyRadius)
       positionCache.set(hash, pos)
     }
     return pos
@@ -342,19 +373,8 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
       remote = stars
     },
     setHistoricalStars(stars: HistoricalStar[]) {
-      for (const sprite of historicalSprites) releaseSprite(sprite)
-      historicalSprites.length = 0
-      for (const star of stars) {
-        const sprite = acquireSprite()
-        applyBucket(sprite, star.emotion)
-        const pos = positionFor(star.hash)
-        sprite.sprite.position.set(pos.x, pos.y, pos.z)
-        // Più tenue delle presenze live: solo un ricordo, non un vicino.
-        sprite.sprite.scale.setScalar(0.34)
-        sprite.material.opacity = 0.28 + star.confidence * 0.2
-        sprite.sprite.visible = true
-        historicalSprites.push(sprite)
-      }
+      historicalStars = stars
+      placeHistoricalStars()
     },
     setReducedMotion(reduced: boolean) {
       reducedMotion = reduced
@@ -378,7 +398,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
 
       if (current) {
         const elapsed = now - current.birthTime
-        const size = starSizeForDuration(elapsed, 0.55)
+        const size = starSizeForDuration(elapsed, OWN_STAR_BASE_SIZE)
         const tw = twinkle(now, current.confidence, seedFor(current.hash), reducedMotion)
 
         ownMaterial.color.copy(SKY_COLORS[current.emotion])
@@ -403,7 +423,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           remoteSprites.set(remoteStar.hash, star)
         }
         const tw = twinkle(now, remoteStar.confidence, seedFor(remoteStar.hash), reducedMotion)
-        star.sprite.scale.setScalar(0.5 * tw.size)
+        star.sprite.scale.setScalar(REMOTE_STAR_SIZE * tw.size)
         // Ogni stella ha il proprio materiale, così può brillare per conto suo.
         star.material.opacity = Math.min(1, 0.95 * tw.intensity)
         star.sprite.visible = true
@@ -422,7 +442,7 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
           releaseSprite(sprite)
           fading.splice(i, 1)
         } else {
-          sprite.sprite.scale.setScalar(Math.max(0.0001, 0.5 * (1 - t)))
+          sprite.sprite.scale.setScalar(Math.max(0.0001, REMOTE_STAR_SIZE * (1 - t)))
         }
       }
 
@@ -519,6 +539,22 @@ export function createSky(canvas: HTMLCanvasElement): SkyHandles {
     resize(width: number, height: number) {
       camera.aspect = width / height
       camera.updateProjectionMatrix()
+      // Il raggio sicuro dipende dalla forma dello schermo: se cambia,
+      // riallineamo tutte le stelle alla nuova cornice.
+      skyRadius = safeSkyRadius(camera.aspect)
+      positionCache.clear()
+      cachedRadius = skyRadius
+      if (current) {
+        const pos = positionFor(current.hash)
+        ownPosition.set(pos.x, pos.y, pos.z)
+        ownStar.position.copy(ownPosition)
+        ownRing.position.copy(ownPosition)
+      }
+      for (const [hash, star] of remoteSprites) {
+        const pos = positionFor(hash)
+        star.sprite.position.set(pos.x, pos.y, pos.z)
+      }
+      placeHistoricalStars()
       renderer.setSize(width, height)
       composer.setSize(width, height)
       bloomPass.setSize(width, height)
