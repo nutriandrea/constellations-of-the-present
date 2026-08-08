@@ -95,7 +95,7 @@ Status 2026-08-08: completed. Render stelle riscritto: sprite con texture radial
 2. Public deploy URL; demo video (30–60s).
 3. Contact organizers to confirm "other digital formats" includes interactive web.
 
-Status 2026-08-08: completed (parte deploy resta bloccata: Vercel CLI non autenticato, nessun `.env` Supabase). Deliverable scritti:
+Status 2026-08-08: completed (deploy ora completato, vedi W6 sotto). Deliverable scritti:
 - `docs/submission/concept-statement.md` — 237 parole (≤250), byline Andrea Cacioppo, Politecnico di Milano, tema ELYAH.
 - `docs/submission/bio.md` — 66 parole (≤75).
 - `docs/submission/organizer-email.md` — bozza email agli organizzatori per confermare che il formato "interactive web" sia accettato (pronta da inviare).
@@ -108,9 +108,18 @@ Status 2026-08-08: completed (parte deploy resta bloccata: Vercel CLI non autent
 Verifica: 62 test verdi (11 file), tsc + build + lint puliti.
 
 **Todo W5 rimanenti (bloccati da input/credenziali utente):**
-- Deploy pubblico: `vercel login` (interattivo) + variabili Supabase in Vercel (o deploy senza `.env` → sky broadcast multi-tab same-origin). `npm audit` prima del deploy (rischio residuo W4).
+- ~~Deploy pubblico: `vercel login` (interattivo) + variabili Supabase in Vercel (o deploy senza `.env` → sky broadcast multi-tab same-origin). `npm audit` prima del deploy.~~ **FATTO in W6.**
 - Invio email organizzatori (bozza pronta in `docs/submission/organizer-email.md`).
 - Contenuti personali per la submission finale (email di contatto, eventuale istituzione nel form): confermare con l'artista.
+
+### W6 — Deploy Vercel (DONE)
+1. `vercel login` interattivo (utente, da Terminal) + `vercel --prod --yes`.
+2. `npm audit` (0 vulnerabilità) prima del deploy.
+3. Verifica URL pubblico, `/portfolio.html`, header di sicurezza, bundle JS.
+
+Status 2026-08-08: completed. `vercel --prod --yes` da root repo: progetto `nutriandreas-projects/constellations-of-the-present` linkato (`.vercel` creato e aggiunto a `.gitignore`), repo GitHub collegato, build Vite auto-detect. Alias di produzione pulito: **https://constellations-of-the-present.vercel.app** (la URL di deploy `*-nutriandreas-projects.vercel.app` è dietro SSO → 302 a vercel.com/login; l'alias pubblico risponde 200). Verificato: `/` 200 (HTML, canvas, `#about-link` → `/portfolio.html`), `/portfolio.html` 200 con titolo corretto, bundle JS `/assets/index-Cyi4-BfK.js` 200 (372KB, application/javascript), header di sicurezza attivi su entrambe le pagine (X-Frame-Options DENY, nosniff, no-referrer, Permissions-Policy camera/mic/autoplay/fullscreen self, COOP same-origin), CSP iniettato come meta tag in `/` (da `vite.config.ts`); `portfolio.html` statica senza meta CSP (accettato, pagina statica senza contenuto dinamico). `npm audit`: 0 vulnerabilità. Su un deployment senza `.env` Supabase il cielo usa il fallback BroadcastChannel (multi-tab same-origin); sync cross-device richiede Supabase URL/anon key come env in Vercel (non configurato).
+
+**W6 acceptance**: URL pubblico navigabile, portfolio accessibile, header di sicurezza attivi, audit pulito.
 
 **W5 acceptance**: submission package + URL + organizer confirmation (URL e conferma organizzatori pendenti da input utente).
 
@@ -130,6 +139,7 @@ Verifica: 62 test verdi (11 file), tsc + build + lint puliti.
 - W3: retention table populated anonymously; zero user-facing persistence UI.
 - W4: polished mobile-friendly sky.
 - W5: submission package + URL + organizer confirmation.
+- W6: deploy pubblico su Vercel verificato (URL, portfolio, header, audit).
 
 ## Deviations
 - ESLint: configured in W4 (typescript-eslint flat config, `npm run lint`), deviazione chiusa.
