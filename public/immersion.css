@@ -1,0 +1,34 @@
+/* Immersion colour: when the words step aside, the colour must stay — and deepen.
+   Loaded after style.css so these idle rules win. */
+
+body[data-idle='true']::before {
+  animation:
+    nebula 96s ease-in-out infinite alternate,
+    nebula-bloom 38s ease-in-out infinite;
+}
+
+@keyframes nebula-bloom {
+  0%, 100% { filter: blur(40px) saturate(1.4) brightness(1.2); }
+  50% { filter: blur(46px) saturate(1.65) brightness(1.34); }
+}
+
+/* the vignette breathes without ever swallowing the nebula */
+@keyframes void-breathe {
+  0%, 100% { opacity: 0.84; transform: scale(1.02); }
+  50% { opacity: 0.7; transform: scale(1.06); }
+}
+
+/* the sky itself keeps a little more chroma once the interface is gone */
+@keyframes sky-drift {
+  0%, 100% { filter: saturate(1.16) brightness(1.05); }
+  50% { filter: saturate(1.32) brightness(1.11); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-idle='true']::before {
+    animation: none;
+    filter: blur(40px) saturate(1.4) brightness(1.2);
+  }
+  body[data-idle='true'] #sky { filter: saturate(1.16) brightness(1.05); }
+  body[data-idle='true'] #app::after { opacity: 0.84; }
+}
