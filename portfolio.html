@@ -9,8 +9,8 @@
       content="Constellations of the Present by Andrea Cacioppo: a shared sky built from anonymous moment-hashes. On-device sensing, no capture."
     />
     <meta name="theme-color" content="#000000" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://constellations-of-the-present.vercel.app/portfolio.html" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="canonical" href="https://nutriandrea.github.io/constellations-of-the-present/portfolio.html" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Constellations of the Present — World" />
     <meta
@@ -26,11 +26,10 @@
     />
     <style>
       /* =========================================================
-         CONSTELLATIONS OF THE PRESENT — "MONDO"
-         Void black · paper · single acid signal.
-         Built on current web standards only: scroll-driven
-         animations, view transitions, popover, :has(), container
-         queries, color-mix, CSS 3D. No libraries.
+         CONSTELLATIONS OF THE PRESENT — the same sky, read as a page.
+         The work is the page: a black room, a faint nebula behind the
+         glass, hairlines and a few whispered words. No instrument grid,
+         no interface chrome — the language of the artwork itself.
          ========================================================= */
 
       @view-transition {
@@ -46,14 +45,24 @@
 
         --void: #000000;
         --paper: #f2f0e9;
-        --dim: color-mix(in oklab, var(--paper) 55%, transparent);
-        --dimmer: color-mix(in oklab, var(--paper) 30%, transparent);
+        --dim: color-mix(in oklab, var(--paper) 44%, transparent);
+        --dimmer: color-mix(in oklab, var(--paper) 20%, transparent);
         --rule: color-mix(in oklab, var(--paper) 12%, transparent);
         --rule-soft: color-mix(in oklab, var(--paper) 6%, transparent);
-        --signal: #ceff4d;
-        --violet: #8b6cff;
-        --cyan: #56d6f0;
-        --rose: #ff7aa8;
+
+        /* le tinte del cielo: il clima freddo delle memorie e la brace del presente */
+        --ghost: #9db8e8;
+        --ice: #cfdfff;
+        --ember: #ffab7a;
+        --warm: #ffd2a1;
+
+        /* le sei letture, un solo gradiente */
+        --joy: #ffd86b;
+        --calm: #8fd7ef;
+        --sadness: #7ea7ff;
+        --anger: #ff7968;
+        --surprise: #ff8fc9;
+        --neutral: var(--paper);
 
         --gutter: clamp(20px, 4vw, 64px);
         --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -86,7 +95,7 @@
       }
 
       ::selection {
-        background: var(--signal);
+        background: color-mix(in oklab, var(--warm) 70%, transparent);
         color: var(--void);
       }
 
@@ -94,17 +103,24 @@
         color: inherit;
       }
 
-      /* --- persistent instrument frame ------------------------ */
-      .frame {
+      /* --- the room: nebula clouds behind everything, barely there --- */
+      .air {
         position: fixed;
-        inset: 0;
-        z-index: 2;
+        inset: -20%;
+        z-index: -2;
         pointer-events: none;
-        background-image:
-          linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
-          linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
-        background-size: 12.5vw 12.5vw;
-        mask-image: radial-gradient(ellipse 80% 80% at 50% 45%, #000 30%, transparent 80%);
+        background:
+          radial-gradient(38% 30% at 22% 26%, rgba(88, 62, 168, 0.24), transparent 70%),
+          radial-gradient(34% 26% at 78% 68%, rgba(24, 96, 132, 0.2), transparent 72%),
+          radial-gradient(46% 38% at 58% 18%, rgba(122, 46, 96, 0.12), transparent 74%),
+          radial-gradient(60% 50% at 50% 90%, rgba(18, 22, 58, 0.4), transparent 76%);
+        filter: blur(42px) saturate(1.1);
+        animation: nebula 96s ease-in-out infinite alternate;
+      }
+
+      @keyframes nebula {
+        0% { transform: translate3d(-1.5%, 1%, 0) scale(1.04) rotate(-0.6deg); opacity: 0.85; }
+        100% { transform: translate3d(2%, -1.5%, 0) scale(1.12) rotate(0.8deg); opacity: 1; }
       }
 
       .grain {
@@ -112,7 +128,7 @@
         inset: -50%;
         z-index: 3;
         pointer-events: none;
-        opacity: 0.15;
+        opacity: 0.12;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
         animation: grain-drift 6s steps(6) infinite;
       }
@@ -124,6 +140,15 @@
         60% { transform: translate3d(-2%, -2%, 0); }
         80% { transform: translate3d(3%, 1%, 0); }
         100% { transform: translate3d(0, 0, 0); }
+      }
+
+      /* vignette: the black never looks like plastic */
+      .vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.82) 100%);
       }
 
       /* --- entry gate ----------------------------------------- */
@@ -145,13 +170,14 @@
       .gate-inner {
         display: grid;
         justify-items: center;
-        gap: 26px;
+        gap: 28px;
         text-align: center;
         padding: var(--gutter);
-        max-width: 46ch;
+        max-width: 44ch;
       }
 
       .gate-mark {
+        margin: 0;
         font-family: var(--font-mono);
         font-size: 10px;
         letter-spacing: 0.34em;
@@ -159,11 +185,26 @@
         color: var(--dim);
       }
 
+      .gate-constellation {
+        width: min(48vw, 240px);
+        height: auto;
+        opacity: 0.9;
+      }
+
+      .gate-constellation line {
+        stroke: var(--rule);
+        stroke-width: 1;
+      }
+
+      .gate-constellation circle {
+        fill: var(--paper);
+      }
+
       .gate-title {
         margin: 0;
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: clamp(2.1rem, 6vw, 4.4rem);
+        font-size: clamp(2.1rem, 6.4vw, 4.6rem);
         line-height: 0.88;
         letter-spacing: -0.045em;
         text-transform: uppercase;
@@ -173,8 +214,11 @@
       .gate-title em {
         display: block;
         font-style: normal;
+        font-weight: 300;
         color: transparent;
-        -webkit-text-stroke: 1px var(--paper);
+        -webkit-text-stroke: 1px var(--rule);
+        letter-spacing: 0.18em;
+        text-indent: 0.18em;
       }
 
       .gate-copy {
@@ -184,10 +228,11 @@
       }
 
       .gate-counter {
+        margin: 0;
         font-family: var(--font-mono);
         font-size: 10px;
         letter-spacing: 0.3em;
-        color: var(--signal);
+        color: var(--warm);
         font-variant-numeric: tabular-nums;
       }
 
@@ -197,7 +242,7 @@
         display: inline-flex;
         align-items: center;
         gap: 12px;
-        padding: 13px 28px;
+        padding: 14px 30px;
         border: 1px solid var(--rule);
         border-radius: 999px;
         background: transparent;
@@ -217,30 +262,10 @@
 
       .btn:hover,
       .btn:focus-visible {
-        border-color: var(--signal);
-        color: var(--signal);
+        border-color: var(--warm);
+        color: var(--warm);
         letter-spacing: 0.32em;
         outline: none;
-      }
-
-      .btn--solid {
-        background: var(--signal);
-        border-color: var(--signal);
-        color: var(--void);
-      }
-
-      .btn--solid:hover,
-      .btn--solid:focus-visible {
-        color: var(--void);
-        background: color-mix(in oklab, var(--signal) 82%, var(--paper));
-      }
-
-      .btn--quiet {
-        border: 0;
-        padding: 6px 0;
-        border-bottom: 1px solid var(--rule);
-        border-radius: 0;
-        color: var(--dim);
       }
 
       /* --- masthead ------------------------------------------- */
@@ -254,12 +279,22 @@
         align-items: center;
         justify-content: space-between;
         gap: 20px;
-        padding: 22px var(--gutter);
+        padding: 24px var(--gutter);
         font-family: var(--font-mono);
         font-size: 10px;
         letter-spacing: 0.22em;
         text-transform: uppercase;
         mix-blend-mode: difference;
+      }
+
+      .masthead::after {
+        content: '';
+        position: absolute;
+        left: var(--gutter);
+        right: var(--gutter);
+        bottom: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--rule), transparent);
       }
 
       .masthead a {
@@ -308,7 +343,7 @@
         margin: 0;
         position: fixed;
         inset: auto var(--gutter) auto auto;
-        top: 74px;
+        top: 76px;
         min-width: 240px;
       }
 
@@ -348,113 +383,74 @@
         align-self: center;
       }
 
-      /* --- the orb -------------------------------------------- */
+      /* --- the world: a constellation that turns by itself ----- */
       .world {
         position: relative;
         min-height: 100svh;
         display: grid;
         place-items: center;
-        perspective: 2400px;
-        touch-action: pan-y;
         overflow: clip;
       }
 
-      .orb {
-        position: relative;
-        width: min(62vmin, 620px);
-        aspect-ratio: 1;
-        transform-style: preserve-3d;
-        transform: rotateX(-12deg) rotateY(var(--spin, 0deg));
-        will-change: transform;
-        translate: clamp(0px, 9vw, 150px) -4vh;
-      }
-
-      .orb::after {
-        content: '';
+      .constellation {
         position: absolute;
-        inset: 12%;
-        border-radius: 50%;
-        background: radial-gradient(circle at 42% 36%, color-mix(in oklab, var(--violet) 22%, transparent), transparent 62%);
-        filter: blur(42px);
-        transform: translateZ(-160px);
+        inset: 6% 0;
+        width: min(92vw, 1000px);
+        height: auto;
+        margin: auto;
+        opacity: 0.85;
       }
 
-      .ring {
-        position: absolute;
-        inset: 0;
-        border: 1px solid color-mix(in oklab, var(--paper) 13%, transparent);
-        border-radius: 50%;
-        transform: rotateY(calc(var(--i) * 15deg));
+      .constellation line {
+        stroke: var(--rule);
+        stroke-width: 1;
       }
 
-      .ring--lat {
-        inset: auto 0;
-        top: 50%;
-        height: 0;
-        transform: translateY(calc(var(--o) * 1px)) rotateX(90deg) scale(var(--s));
+      .constellation line.fresh {
+        stroke: color-mix(in oklab, var(--ghost) 46%, transparent);
+        stroke-dasharray: 3 5;
       }
 
-      .node-anchor {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: clamp(110px, 13vw, 190px);
-        aspect-ratio: 4 / 3;
-        margin: 0;
-        transform-style: preserve-3d;
-        transform: translate(-50%, -50%) rotateY(var(--ry)) rotateX(var(--rx))
-          translateZ(var(--tz, 300px));
+      .constellation circle {
+        fill: var(--paper);
       }
 
-      .node {
-        position: absolute;
-        inset: 0;
-        margin: 0;
-        padding: 14px;
-        display: grid;
-        place-content: center;
-        gap: 6px;
-        text-align: center;
-        border: 1px solid var(--rule);
-        background: color-mix(in oklab, var(--void) 62%, transparent);
-        backdrop-filter: blur(3px);
-        transform: rotateY(calc((var(--ry) + var(--spin, 0deg)) * -1)) rotateX(12deg)
-          translateY(var(--dy, 0px));
-        transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+      .constellation circle.emotion {
+        animation: twinkle 5.6s var(--ease) infinite;
       }
 
-      .node::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--tint, var(--violet)) 45%, transparent), transparent 60%),
-          radial-gradient(circle at 75% 80%, color-mix(in oklab, var(--tint, var(--violet)) 22%, transparent), transparent 65%);
-        opacity: 0.75;
-        mix-blend-mode: screen;
-      }
-
-      .node:hover {
-        border-color: var(--signal);
-        background: color-mix(in oklab, var(--void) 40%, transparent);
-      }
-
-      .node b {
-        position: relative;
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: clamp(0.85rem, 1.3vw, 1.15rem);
-        letter-spacing: -0.02em;
-        line-height: 1.05;
-      }
-
-      .node span {
-        position: relative;
+      .constellation text {
+        fill: var(--dimmer);
         font-family: var(--font-mono);
-        font-size: 8px;
+        font-size: 9px;
         letter-spacing: 0.24em;
         text-transform: uppercase;
-        color: var(--dim);
+      }
+
+      @keyframes twinkle {
+        0%, 100% { opacity: 0.55; }
+        50% { opacity: 1; }
+      }
+
+      /* a rare falling star */
+      .meteor {
+        position: absolute;
+        top: 20%;
+        left: 30%;
+        width: 180px;
+        height: 1px;
+        background: linear-gradient(to left, var(--warm), transparent);
+        transform: rotate(-24deg);
+        opacity: 0;
+        animation: meteor-fall 9s var(--ease) infinite;
+        animation-delay: 3s;
+      }
+
+      @keyframes meteor-fall {
+        0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-24deg); }
+        4% { opacity: 0.9; }
+        12% { opacity: 0; transform: translate3d(560px, 260px, 0) rotate(-24deg); }
+        100% { opacity: 0; }
       }
 
       .world-title {
@@ -463,10 +459,10 @@
         bottom: clamp(90px, 12vh, 150px);
         z-index: 5;
         margin: 0;
-        max-width: min(46vw, 560px);
+        max-width: min(54vw, 620px);
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: clamp(2.2rem, 6.8vw, 6.4rem);
+        font-size: clamp(2.2rem, 7vw, 6.6rem);
         line-height: 0.84;
         letter-spacing: -0.05em;
         text-transform: uppercase;
@@ -477,8 +473,11 @@
       .world-title em {
         display: block;
         font-style: normal;
+        font-weight: 300;
         color: transparent;
-        -webkit-text-stroke: 1px var(--paper);
+        -webkit-text-stroke: 1px var(--rule);
+        letter-spacing: 0.16em;
+        text-indent: 0.16em;
       }
 
       .world-meta {
@@ -491,17 +490,23 @@
         font-size: 9px;
         letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: var(--dim);
+        color: var(--dimmer);
         display: grid;
         gap: 6px;
+      }
+
+      .world-meta b {
+        font-weight: 400;
+        color: var(--dim);
       }
 
       .drag-hint {
         position: absolute;
         left: 50%;
-        bottom: 34px;
+        bottom: 36px;
         transform: translateX(-50%);
         z-index: 5;
+        margin: 0;
         font-family: var(--font-mono);
         font-size: 9px;
         letter-spacing: 0.3em;
@@ -510,7 +515,7 @@
       }
 
       @media (max-width: 720px) {
-        .world-title { max-width: none; right: var(--gutter); bottom: 130px; }
+        .world-title { max-width: none; right: var(--gutter); bottom: 140px; }
         .world-meta { display: none; }
       }
 
@@ -535,29 +540,47 @@
 
       @container (min-width: 780px) {
         .sec-head {
-          grid-template-columns: 12ch 1fr;
+          grid-template-columns: 13ch 1fr;
           gap: 40px;
           align-items: start;
         }
       }
 
       .sec-num {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        margin: 0;
         font-family: var(--font-mono);
         font-size: 9px;
         letter-spacing: 0.3em;
         text-transform: uppercase;
-        color: var(--signal);
+        color: var(--dim);
         padding-top: 0.9em;
+      }
+
+      .sec-num::before {
+        content: '';
+        width: 18px;
+        height: 1px;
+        background: var(--rule);
+        align-self: center;
       }
 
       h2 {
         margin: 0;
         font-family: var(--font-display);
-        font-weight: 700;
+        font-weight: 300;
         font-size: clamp(1.9rem, 5.2vw, 4.2rem);
-        line-height: 0.95;
-        letter-spacing: -0.04em;
+        line-height: 0.98;
+        letter-spacing: -0.03em;
         text-wrap: balance;
+      }
+
+      h2 strong {
+        display: block;
+        font-weight: 800;
+        letter-spacing: -0.045em;
       }
 
       .lede {
@@ -566,6 +589,11 @@
         font-size: clamp(1rem, 1.5vw, 1.3rem);
         line-height: 1.5;
         text-wrap: pretty;
+      }
+
+      .lede em {
+        color: var(--paper);
+        font-style: normal;
       }
 
       .cols {
@@ -588,10 +616,12 @@
       }
 
       .card i {
-        width: 7px;
-        height: 7px;
-        background: var(--tint, var(--signal));
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--tint, var(--ghost));
         font-style: normal;
+        box-shadow: 0 0 8px var(--tint, var(--ghost));
       }
 
       .card h3 {
@@ -623,15 +653,16 @@
         padding: 18px 0;
         border-top: 1px solid var(--rule-soft);
         font-family: var(--font-display);
-        font-size: clamp(1rem, 2.2vw, 1.7rem);
-        font-weight: 400;
+        font-size: clamp(1rem, 2.2vw, 1.6rem);
+        font-weight: 300;
         letter-spacing: -0.02em;
         transition: color 0.35s var(--ease), padding-left 0.45s var(--ease);
       }
 
       .stack li:hover {
-        color: var(--signal);
+        color: var(--warm);
         padding-left: 12px;
+        border-top-color: var(--rule);
       }
 
       .stack li b,
@@ -645,27 +676,41 @@
         text-transform: uppercase;
       }
 
+      .stack li b {
+        color: var(--ghost);
+      }
+
       .spectrum {
         height: 1px;
         margin-top: 46px;
-        background: linear-gradient(
-          90deg,
-          var(--signal),
-          var(--rose),
-          var(--violet),
-          var(--cyan),
-          var(--signal)
-        );
-        opacity: 0.7;
+        background: linear-gradient(90deg, var(--ice), var(--ghost), var(--neutral), var(--warm), var(--ember));
+        opacity: 0.75;
       }
 
       .spectrum-key {
         margin-top: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
         font-family: var(--font-mono);
         font-size: 9px;
         letter-spacing: 0.24em;
         text-transform: uppercase;
         color: var(--dimmer);
+      }
+
+      .spectrum-key span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .spectrum-key span::before {
+        content: '';
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--dot, var(--paper));
       }
 
       /* author */
@@ -689,6 +734,8 @@
         line-height: 1.1;
         letter-spacing: -0.03em;
         text-wrap: balance;
+        border-left: 1px solid var(--ghost);
+        padding-left: clamp(20px, 3vw, 40px);
       }
 
       blockquote footer {
@@ -712,10 +759,14 @@
 
       .outro h2 {
         font-size: clamp(2.2rem, 9vw, 7.5rem);
-        font-weight: 800;
+        font-weight: 300;
         text-transform: uppercase;
         line-height: 0.85;
         letter-spacing: -0.05em;
+      }
+
+      .outro h2 strong {
+        font-weight: 300;
       }
 
       footer.site {
@@ -746,6 +797,13 @@
             animation-timeline: view();
             animation-range: entry 10% cover 30%;
           }
+
+          /* the constellation recedes gently as you scroll on */
+          .constellation {
+            animation: recede linear both;
+            animation-timeline: scroll();
+            animation-range: 0 55%;
+          }
         }
       }
 
@@ -765,6 +823,10 @@
       @keyframes rule-in {
         from { opacity: 0; letter-spacing: 0.6em; }
         to { opacity: 1; letter-spacing: 0.3em; }
+      }
+
+      @keyframes recede {
+        to { opacity: 0.25; scale: 0.94; }
       }
 
       /* --- custom cursor -------------------------------------- */
@@ -792,32 +854,45 @@
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
         .grain { animation: none; }
-        .orb { transition: none; }
+        .meteor { animation: none; }
+        .constellation circle.emotion { animation: none; }
       }
     </style>
   </head>
 
   <body>
-    <div class="frame" aria-hidden="true"></div>
+    <div class="air" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
     <div id="cursor" aria-hidden="true"></div>
 
     <!-- ENTRY GATE -->
     <div id="gate" data-open="true">
       <div class="gate-inner">
         <p class="gate-mark">Interactive web artwork · MMXXVI</p>
+        <svg class="gate-constellation" viewBox="0 0 240 80" aria-hidden="true">
+          <line x1="30" y1="60" x2="110" y2="24" />
+          <line x1="110" y1="24" x2="168" y2="52" />
+          <line x1="168" y1="52" x2="210" y2="18" />
+          <line x1="110" y1="24" x2="78" y2="70" />
+          <circle cx="30" cy="60" r="2.4" />
+          <circle cx="110" cy="24" r="3.2" />
+          <circle cx="168" cy="52" r="2" />
+          <circle cx="210" cy="18" r="2.6" />
+          <circle cx="78" cy="70" r="1.6" />
+        </svg>
         <h1 class="gate-title">Constellations<em>of the Present</em></h1>
         <p class="gate-copy">
           A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever leaves the device.
         </p>
-        <button class="btn btn--solid" id="gate-enter" type="button">Enter the world</button>
+        <button class="btn" id="gate-enter" type="button">Enter the world</button>
         <p class="gate-counter" id="gate-counter">000</p>
       </div>
     </div>
 
     <!-- MASTHEAD -->
     <header class="masthead">
-      <a href="/portfolio.html">COTP / Observatory</a>
+      <a href="index.html">COTP / Observatory</a>
       <nav>
         <a href="#concept">Concept</a>
         <a href="#privacy">Privacy</a>
@@ -833,67 +908,56 @@
         <li><a href="#privacy">Privacy <span>02</span></a></li>
         <li><a href="#technical">Technical <span>03</span></a></li>
         <li><a href="#author">Author <span>04</span></a></li>
-        <li><a href="/">Enter the sky <span>↗</span></a></li>
+        <li><a href="index.html">Enter the sky <span>↗</span></a></li>
       </ul>
     </div>
 
     <!-- THE WORLD -->
     <div class="world" id="world">
-      <div class="orb" id="orb" aria-hidden="true">
-        <div class="ring" style="--i: 0"></div>
-        <div class="ring" style="--i: 1"></div>
-        <div class="ring" style="--i: 2"></div>
-        <div class="ring" style="--i: 3"></div>
-        <div class="ring" style="--i: 4"></div>
-        <div class="ring" style="--i: 5"></div>
-        <div class="ring ring--lat" style="--o: -260; --s: 0.55"></div>
-        <div class="ring ring--lat" style="--o: -170; --s: 0.82"></div>
-        <div class="ring ring--lat" style="--o: -60; --s: 0.98"></div>
-        <div class="ring ring--lat" style="--o: 60; --s: 0.98"></div>
-        <div class="ring ring--lat" style="--o: 170; --s: 0.82"></div>
-        <div class="ring ring--lat" style="--o: 260; --s: 0.55"></div>
+      <svg class="constellation" viewBox="0 0 1200 760" aria-hidden="true">
+        <!-- the threads of the present -->
+        <line x1="190" y1="540" x2="470" y2="300" />
+        <line x1="470" y1="300" x2="660" y2="470" />
+        <line x1="660" y1="470" x2="870" y2="240" />
+        <line x1="870" y1="240" x2="1040" y2="430" />
+        <line x1="470" y1="300" x2="360" y2="600" />
+        <line x1="660" y1="470" x2="920" y2="610" />
+        <line class="fresh" x1="1040" y1="430" x2="1150" y2="180" />
+        <line class="fresh" x1="360" y1="600" x2="190" y2="540" />
+        <!-- the pilgrim arc -->
+        <path
+          d="M 190 540 Q 540 140 660 470"
+          fill="none"
+          stroke="color-mix(in oklab, var(--ghost) 40%, transparent)"
+          stroke-width="1"
+        />
+        <!-- the stars -->
+        <circle class="emotion" style="--delay: 0s" cx="190" cy="540" r="3" fill="var(--warm)" />
+        <circle class="emotion" style="--delay: 1.4s" cx="470" cy="300" r="4" fill="var(--ghost)" />
+        <circle class="emotion" style="--delay: 0.6s" cx="660" cy="470" r="2.6" fill="var(--ice)" />
+        <circle class="emotion" style="--delay: 2.1s" cx="870" cy="240" r="3.4" fill="var(--paper)" />
+        <circle class="emotion" style="--delay: 1s" cx="1040" cy="430" r="2.4" fill="var(--ember)" />
+        <circle class="emotion" style="--delay: 2.8s" cx="360" cy="600" r="2.2" fill="var(--ghost)" />
+        <circle class="emotion" style="--delay: 0.3s" cx="920" cy="610" r="2" fill="var(--warm)" />
+        <circle class="emotion" style="--delay: 1.9s" cx="1150" cy="180" r="2.6" fill="var(--ice)" />
+        <!-- the labels -->
+        <text x="470" y="276">Moment-hash</text>
+        <text x="660" y="500">On-device</text>
+        <text x="870" y="214">Shared sky</text>
+        <text x="1040" y="456">No capture</text>
+        <text x="190" y="564">Presence</text>
+      </svg>
+      <span class="meteor" aria-hidden="true"></span>
 
-        <div class="node-anchor" style="--ry: 10deg; --rx: 0deg; --tz: 320px; --dy: -120px">
-          <figure class="node" style="--tint: var(--violet)">
-            <b>Moment-hash</b>
-            <span>SHA-256 · nonce</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 82deg; --rx: 0deg; --tz: 320px; --dy: 78px">
-          <figure class="node" style="--tint: var(--cyan)">
-            <b>On-device</b>
-            <span>MediaPipe</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 154deg; --rx: 0deg; --tz: 320px; --dy: -52px">
-          <figure class="node" style="--tint: var(--rose)">
-            <b>Shared sky</b>
-            <span>Realtime</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 226deg; --rx: 0deg; --tz: 320px; --dy: 120px">
-          <figure class="node" style="--tint: var(--signal)">
-            <b>No capture</b>
-            <span>Zero raw data</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 298deg; --rx: 0deg; --tz: 320px; --dy: -96px">
-          <figure class="node" style="--tint: var(--violet)">
-            <b>Live presence</b>
-            <span>Short TTL</span>
-          </figure>
-        </div>
-      </div>
-
-      <h2 class="world-title">The world<em>of the present</em></h2>
+      <h2 class="world-title">A shared sky<em>of the present</em></h2>
 
       <div class="world-meta">
-        <span>Lat — / Lon — / Local time</span>
-        <span>Andrea Cacioppo · Milan</span>
-        <span id="live-clock">--:--:--</span>
+        <span>One sky · every timezone</span>
+        <span><b id="live-clock">--:--:--</b> local</span>
+        <span>Andrea Cacioppo · Milan / Politecnico di Milano</span>
       </div>
 
-      <p class="drag-hint">Drag to rotate</p>
+      <p class="drag-hint">The sky turns on its own</p>
     </div>
 
     <main>
@@ -901,7 +965,7 @@
       <section id="concept">
         <div class="sec-head">
           <p class="sec-num">01 / Concept</p>
-          <h2 class="reveal">The sky is the first shared surface.</h2>
+          <h2 class="reveal">The sky is<strong>the first shared surface.</strong></h2>
         </div>
         <div class="reveal">
           <p class="lede">
@@ -917,24 +981,24 @@
       <section id="privacy">
         <div class="sec-head">
           <p class="sec-num">02 / Privacy</p>
-          <h2 class="reveal">Nothing raw is transmitted, stored or logged.</h2>
+          <h2 class="reveal">Nothing raw is<strong>transmitted, stored or logged.</strong></h2>
         </div>
         <div class="cols reveal">
-          <article class="card" style="--tint: var(--cyan)">
+          <article class="card" style="--tint: var(--calm)">
             <i></i>
             <h3>On-device sensing</h3>
             <p>
               Face tracking runs entirely in the browser and is discarded frame by frame. No image or video ever leaves the device.
             </p>
           </article>
-          <article class="card" style="--tint: var(--violet)">
+          <article class="card" style="--tint: var(--ghost)">
             <i></i>
             <h3>Moment-hash</h3>
             <p>
               Quantised expression and engagement values are hashed with a random nonce. The result is anonymous and non-reversible.
             </p>
           </article>
-          <article class="card" style="--tint: var(--rose)">
+          <article class="card" style="--tint: var(--ember)">
             <i></i>
             <h3>Opt-in audio only</h3>
             <p>
@@ -959,10 +1023,16 @@
           <li><b>06</b> Bézier arcs with progressive reveal <em>drawing</em></li>
           <li><b>07</b> Global emotional gradient, gamma corrected <em>colour</em></li>
           <li><b>08</b> Anonymous realtime — no personal data <em>network</em></li>
+          <li><b>09</b> Device memory, nothing else <em>storage</em></li>
         </ul>
         <div class="spectrum" aria-hidden="true"></div>
         <p class="spectrum-key">
-          Joy → Surprise → Anger → Sadness → Calm → Neutral : one gradient, six readings
+          <span style="--dot: var(--joy)">Joy</span>
+          <span style="--dot: var(--calm)">Calm</span>
+          <span style="--dot: var(--sadness)">Sadness</span>
+          <span style="--dot: var(--anger)">Anger</span>
+          <span style="--dot: var(--surprise)">Surprise</span>
+          <span style="--dot: var(--neutral)">Neutral</span>
         </p>
       </section>
 
@@ -989,7 +1059,7 @@
         <p class="lede reveal" style="max-width: 46ch">
           Your star appears only while you are present — and disappears the moment you look away.
         </p>
-        <a class="btn btn--solid reveal" href="/">Enter the sky</a>
+        <a class="btn reveal" href="index.html">Enter the sky</a>
       </section>
     </main>
 
@@ -1017,60 +1087,6 @@
         clearInterval(tick);
       });
 
-      /* ---- orb: idle spin + pointer drag, one rAF loop ---- */
-      const orb = document.getElementById('orb');
-      const world = document.getElementById('world');
-      let spin = 0;
-      let velocity = reduced ? 0 : 0.035;
-      let dragging = false;
-      let lastX = 0;
-
-      world.addEventListener('pointerdown', (e) => {
-        dragging = true;
-        lastX = e.clientX;
-        world.setPointerCapture(e.pointerId);
-      });
-
-      world.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const dx = e.clientX - lastX;
-        lastX = e.clientX;
-        spin += dx * 0.22;
-        velocity = dx * 0.05;
-      });
-
-      const release = () => {
-        dragging = false;
-      };
-      world.addEventListener('pointerup', release);
-      world.addEventListener('pointercancel', release);
-
-      const idle = reduced ? 0 : 0.035;
-      const anchors = [...document.querySelectorAll('.node-anchor')].map((el) => ({
-        el,
-        card: el.querySelector('.node'),
-        ry: parseFloat(getComputedStyle(el).getPropertyValue('--ry')),
-      }));
-
-      function frame() {
-        if (!dragging) {
-          velocity += (idle - velocity) * 0.04;
-          spin += velocity;
-        }
-        orb.style.setProperty('--spin', spin.toFixed(2) + 'deg');
-
-        // depth cue: nodes on the far side of the sphere recede
-        for (const a of anchors) {
-          const facing = Math.cos(((a.ry + spin) * Math.PI) / 180);
-          // opacity must live on the leaf: setting it on the anchor would
-          // flatten its preserve-3d context and collapse the billboard
-          a.card.style.opacity = (0.14 + 0.86 * ((facing + 1) / 2) ** 1.6).toFixed(3);
-          a.el.style.zIndex = String(Math.round(facing * 100));
-        }
-        requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-
       /* ---- local clock, the work is about the present ---- */
       const clock = document.getElementById('live-clock');
       const setClock = () => {
@@ -1079,6 +1095,26 @@
       setClock();
       setInterval(setClock, 1000);
 
+      /* ---- subtle parallax fallback where scroll-driven CSS is missing ---- */
+      const constellation = document.querySelector('.constellation');
+      if (constellation && !CSS.supports('animation-timeline: scroll()') && !reduced) {
+        let ticking = false;
+        addEventListener(
+          'scroll',
+          () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+              const y = Math.min(window.scrollY / window.innerHeight, 0.8);
+              constellation.style.opacity = String(1 - y * 0.75);
+              constellation.style.scale = String(1 - y * 0.06);
+              ticking = false;
+            });
+          },
+          { passive: true },
+        );
+      }
+
       /* ---- custom cursor ---- */
       const cursor = document.getElementById('cursor');
       addEventListener('pointermove', (e) => {
@@ -1086,7 +1122,7 @@
         cursor.style.setProperty('--y', e.clientY + 'px');
       });
       addEventListener('pointerover', (e) => {
-        const interactive = e.target.closest('a, button, .node, .stack li');
+        const interactive = e.target.closest('a, button, .stack li, .card');
         cursor.style.setProperty('--k', interactive ? '2.2' : '1');
       });
 
