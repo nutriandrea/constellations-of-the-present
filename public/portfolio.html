@@ -126,6 +126,65 @@
         100% { transform: translate3d(0, 0, 0); }
       }
 
+      /* --- the room: deep nebula clouds, same as the sky ------- */
+      .air {
+        position: fixed;
+        inset: -20%;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(38% 30% at 22% 26%, rgba(88, 62, 168, 0.3), transparent 70%),
+          radial-gradient(34% 26% at 78% 68%, rgba(24, 96, 132, 0.26), transparent 72%),
+          radial-gradient(46% 38% at 58% 18%, rgba(122, 46, 96, 0.16), transparent 74%),
+          radial-gradient(60% 50% at 50% 90%, rgba(18, 22, 58, 0.5), transparent 76%);
+        filter: blur(40px) saturate(1.1);
+        animation: nebula 96s ease-in-out infinite alternate;
+      }
+
+      @keyframes nebula {
+        0% { transform: translate3d(-1.5%, 1%, 0) scale(1.04) rotate(-0.6deg); opacity: 0.85; }
+        100% { transform: translate3d(2%, -1.5%, 0) scale(1.12) rotate(0.8deg); opacity: 1; }
+      }
+
+      /* --- static star field, pure css, slow seamless drift ---- */
+      .stars {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.4;
+        background-image:
+          radial-gradient(1.4px 1.4px at 22px 34px, var(--paper), transparent),
+          radial-gradient(1px 1px at 68px 92px, var(--paper), transparent),
+          radial-gradient(1.8px 1.8px at 112px 48px, var(--violet), transparent),
+          radial-gradient(1px 1px at 154px 118px, var(--paper), transparent),
+          radial-gradient(1.4px 1.4px at 198px 64px, var(--cyan), transparent),
+          radial-gradient(1px 1px at 244px 22px, var(--paper), transparent),
+          radial-gradient(1.8px 1.8px at 286px 96px, var(--paper), transparent),
+          radial-gradient(1px 1px at 332px 52px, var(--rose), transparent),
+          radial-gradient(1.2px 1.2px at 372px 128px, var(--paper), transparent),
+          radial-gradient(1px 1px at 52px 142px, var(--paper), transparent),
+          radial-gradient(1.6px 1.6px at 142px 8px, var(--paper), transparent),
+          radial-gradient(1px 1px at 306px 146px, var(--cyan), transparent);
+        background-repeat: repeat;
+        background-size: 400px 160px;
+        animation: stars-drift 260s linear infinite;
+      }
+
+      @keyframes stars-drift {
+        from { background-position: 0 0; }
+        to { background-position: 400px 160px; }
+      }
+
+      /* --- vignette, so the black never looks like plastic ----- */
+      .vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.82) 100%);
+      }
+
       /* --- entry gate ----------------------------------------- */
       #gate {
         position: fixed;
@@ -133,8 +192,20 @@
         z-index: 90;
         display: grid;
         place-items: center;
-        background: var(--void);
+        background: transparent;
         transition: opacity 1s var(--ease), visibility 1s;
+      }
+
+      /* while the gate is open the world behind it stays hidden */
+      .masthead,
+      .world,
+      main {
+        transition: opacity 0.9s var(--ease);
+      }
+
+      body:has(#gate[data-open='true']) :is(.masthead, .world, main) {
+        opacity: 0;
+        pointer-events: none;
       }
 
       #gate[data-open='false'] {
@@ -147,8 +218,10 @@
         justify-items: center;
         gap: 26px;
         text-align: center;
-        padding: var(--gutter);
-        max-width: 46ch;
+        padding: clamp(40px, 8vw, 90px);
+        max-width: 60ch;
+        /* a soft dark halo keeps the title legible over the nebula */
+        background: radial-gradient(ellipse 62% 54% at 50% 50%, rgba(0, 0, 0, 0.72), transparent 72%);
       }
 
       .gate-mark {
@@ -792,12 +865,17 @@
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
         .grain { animation: none; }
+        .air { animation: none; }
+        .stars { animation: none; }
         .orb { transition: none; }
       }
     </style>
   </head>
 
   <body>
+    <div class="air" aria-hidden="true"></div>
+    <div class="stars" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
     <div class="frame" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
     <div id="cursor" aria-hidden="true"></div>
