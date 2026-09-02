@@ -147,6 +147,7 @@ async function main(): Promise<void> {
   }, 2_000)
 
   let lastLoggedSeed = ''
+  let lastReading: ExpressionReading | null = null
   const retentionGate = createRetentionGate(PUBLISH_INTERVAL_MS)
 
   function logRetention(moment: { seed: string }, reading: ExpressionReading, geoOptIn: boolean, now: number): void {
@@ -212,10 +213,15 @@ async function main(): Promise<void> {
         refreshStatus()
       }
       // Without a face we do not push neutrals into the smoother (a blink must
-      // not switch off a stable emotion); we only paint the neutral star.
-      const reading = blendshapes
-        ? smoother.push(readExpressionFromBlendshapes(blendshapes))
-        : { emotion: 'neutral' as const, confidence: 0.2 }
+      // not switch off a stable emotion): the star keeps the last felt colour
+      // instead of fading to grey — the sky stays coloured when you look away.
+      let reading: ExpressionReading
+      if (blendshapes) {
+        reading = smoother.push(readExpressionFromBlendshapes(blendshapes))
+        lastReading = reading
+      } else {
+        reading = lastReading ?? { emotion: 'neutral' as const, confidence: 0.2 }
+      }
       // The star is born ONCE, the first time the face is seen: code, position
       // and identity stay fixed for the whole visit. Emotion only changes the
       // colour, never the star.
