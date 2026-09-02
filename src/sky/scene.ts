@@ -143,14 +143,18 @@ function createStarfield(): THREE.Points {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uCold: { value: new THREE.Color(0x9fc4ff) },
+      uViolet: { value: new THREE.Color(0xb48cff) },
       uWarm: { value: new THREE.Color(0xffd2a1) },
+      uRose: { value: new THREE.Color(0xff9ad5) },
       uTime: { value: 0 },
     },
     vertexShader: `
       attribute float size;
       attribute float tint;
       uniform vec3 uCold;
+      uniform vec3 uViolet;
       uniform vec3 uWarm;
+      uniform vec3 uRose;
       uniform float uTime;
       varying float vAlpha;
       varying vec3 vColor;
@@ -164,7 +168,9 @@ function createStarfield(): THREE.Points {
         float seed = tint * 43.0 + size * 17.0;
         float tw = 0.82 + 0.18 * sin(uTime * 0.55 + seed) * sin(uTime * 0.23 + seed * 1.7);
         vAlpha = mix(0.62, 0.16, depth) * tw * (0.55 + 0.45 * smoothstep(0.4, 1.6, size));
-        vColor = mix(uCold, uWarm, tint);
+        // four-stop palette: ice blue → violet → warm gold → rose,
+        // so the firmament itself is coloured even with no emotion around
+        vColor = tint < 0.5 ? mix(uCold, uViolet, tint * 2.0) : mix(uWarm, uRose, (tint - 0.5) * 2.0);
       }
     `,
     fragmentShader: `
