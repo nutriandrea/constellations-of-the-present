@@ -173,7 +173,7 @@
         gap: 28px;
         text-align: center;
         padding: var(--gutter);
-        max-width: 44ch;
+        max-width: none;
       }
 
       .gate-mark {
@@ -202,6 +202,8 @@
 
       .gate-title {
         margin: 0;
+        width: max-content;
+        max-width: 92vw;
         font-family: var(--font-display);
         font-weight: 800;
         font-size: clamp(2.1rem, 6.4vw, 4.6rem);
@@ -214,15 +216,16 @@
       .gate-title em {
         display: block;
         font-style: normal;
-        font-weight: 300;
+        font-weight: 800;
         color: transparent;
-        -webkit-text-stroke: 1px var(--rule);
+        -webkit-text-stroke: 1.6px var(--paper);
         letter-spacing: 0.18em;
         text-indent: 0.18em;
       }
 
       .gate-copy {
         margin: 0;
+        max-width: 44ch;
         color: var(--dim);
         text-wrap: pretty;
       }
