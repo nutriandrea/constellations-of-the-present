@@ -413,6 +413,158 @@
         font-size: 0.95rem;
       }
 
+      /* ---------- emotion recognition ---------- */
+      .subtitle {
+        margin: 0 0 clamp(18px, 3vh, 26px);
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 400;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--signal);
+      }
+
+      .pipeline {
+        display: grid;
+        gap: 10px;
+        margin: clamp(40px, 6vh, 64px) 0 clamp(20px, 3vw, 36px);
+      }
+
+      @container (min-width: 720px) {
+        .pipeline { grid-template-columns: repeat(4, 1fr); }
+      }
+
+      .pipe {
+        position: relative;
+        display: grid;
+        gap: 8px;
+        padding: 18px 18px 16px;
+        border: 1px solid var(--rule-soft);
+        background: color-mix(in oklab, var(--void) 55%, transparent);
+        backdrop-filter: blur(4px);
+      }
+
+      .pipe b {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+
+      .pipe span {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        line-height: 1.6;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      .pipe::after {
+        content: '→';
+        position: absolute;
+        right: -16px;
+        top: 50%;
+        translate: 0 -50%;
+        color: var(--signal);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        z-index: 1;
+      }
+
+      @container (max-width: 719px) {
+        .pipe::after {
+          content: '↓';
+          right: 14px;
+          top: auto;
+          bottom: -14px;
+          translate: 0 0;
+        }
+      }
+
+      .pipe:last-child::after { content: none; }
+
+      .readings {
+        display: grid;
+        gap: 14px;
+      }
+
+      @container (min-width: 720px) {
+        .readings { grid-template-columns: repeat(3, 1fr); }
+      }
+
+      .reading {
+        border: 1px solid var(--rule-soft);
+        padding: 20px;
+        display: grid;
+        gap: 12px;
+        cursor: default;
+        transition: border-color 0.45s var(--ease), background 0.45s var(--ease);
+      }
+
+      .reading:hover {
+        border-color: var(--rc);
+        background: color-mix(in oklab, var(--rc) 6%, transparent);
+      }
+
+      .reading-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--rc);
+        box-shadow: 0 0 14px color-mix(in oklab, var(--rc) 60%, transparent);
+        flex: none;
+      }
+
+      .reading h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
+      }
+
+      .reading p {
+        margin: 0;
+        color: var(--dim);
+        font-size: 0.92rem;
+      }
+
+      .cue {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 8px;
+        line-height: 1.9;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      .cue em {
+        font-style: normal;
+        color: var(--rc);
+      }
+
+      .readings-note {
+        margin: 18px 0 0;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--dimmer);
+      }
+
+      .readings-note b {
+        color: var(--paper);
+        font-weight: 400;
+      }
+
       .stack {
         list-style: none;
         margin: 0;
@@ -650,18 +802,99 @@
       <section id="concept">
         <div class="sec-head">
           <p class="sec-num">01 / Concept</p>
-          <h2 class="reveal">The sky is the first shared surface.</h2>
+          <h2 class="reveal">The sky reads how you feel.</h2>
         </div>
         <div class="reveal">
           <p class="lede">
-            The same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds that surface
-            for the network age: a collective sky that exists only in the living present, built from moments instead
-            of profiles.
+            The same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds the sky for the
+            network age: a collective surface that exists only in the living present, built from moments instead of
+            profiles.
           </p>
           <p class="lede">
-            Each visitor's presence is sensed entirely on their own device. The camera reads expression, attention
-            and engagement in real time; the reading is quantised and immediately reduced to a non-reversible hash —
-            a "moment-hash" — with a random nonce. Only that anonymous code leaves the device.
+            Sensing happens entirely on your device. The camera watches nothing — it maps tiny facial clues into six
+            emotional readings, then drops them into the sky as an anonymous star. Emotion becomes colour; your
+            expression, for one split second, is shared by everyone watching the same sky. What leaves the device is
+            only a livestream of predictions — never the face, never the image.
+          </p>
+        </div>
+
+        <div class="reveal">
+          <h3 class="subtitle">From face to constellation</h3>
+          <div class="pipeline">
+            <div class="pipe">
+              <b>On-device</b>
+              <span>Face expression mapped in real time — camera, in your browser</span>
+            </div>
+            <div class="pipe">
+              <b>Quantised</b>
+              <span>Emotion + confidence snapped to a small vocabulary</span>
+            </div>
+            <div class="pipe">
+              <b>Hashed</b>
+              <span>Non-reversible moment-hash with a fresh random nonce</span>
+            </div>
+            <div class="pipe">
+              <b>Shared sky</b>
+              <span>Your star appears, colours the void, then fades with your presence</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reveal">
+          <h3 class="subtitle">Six readings, one gradient</h3>
+          <div class="readings">
+            <article class="reading" style="--rc: #ffc94a">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Joy</h3>
+              </div>
+              <p>A wide smile and squinted eyes — the brightest light in the sky.</p>
+              <p class="cue">smile <em>high</em> · squint <em>high</em> · frown <em>low</em></p>
+            </article>
+            <article class="reading" style="--rc: #e0a7ff">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Surprise</h3>
+              </div>
+              <p>An open jaw and raised brows — a supernova, brief and white-hot.</p>
+              <p class="cue">jaw <em>high</em> · eye widen <em>high</em> · brow up <em>med</em></p>
+            </article>
+            <article class="reading" style="--rc: #ff5a4e">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Anger</h3>
+              </div>
+              <p>Lowered brows, pressed lips — a red star burning against the void.</p>
+              <p class="cue">brow down <em>high</em> · lips <em>med</em> · frown <em>med</em></p>
+            </article>
+            <article class="reading" style="--rc: #6b7bd6">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Sadness</h3>
+              </div>
+              <p>A frown and raised inner brows — a cool, distant light.</p>
+              <p class="cue">frown <em>med</em> · brow up <em>med</em> · smile <em>low</em></p>
+            </article>
+            <article class="reading" style="--rc: #9fd8ff">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Calm</h3>
+              </div>
+              <p>A gentle, soft smile — the quiet light most skies are made of.</p>
+              <p class="cue">soft smile <em>high</em> · jaw <em>low</em> · frown <em>low</em></p>
+            </article>
+            <article class="reading" style="--rc: #cfd8e3">
+              <div class="reading-head">
+                <i class="swatch" aria-hidden="true"></i>
+                <h3>Neutral</h3>
+              </div>
+              <p>Nothing crosses the threshold — a steady, neutral star.</p>
+              <p class="cue">confidence <em>low</em> · threshold <em>under</em></p>
+            </article>
+          </div>
+          <p class="readings-note">
+            The six readings are <b>averaged across the crowd</b>: stars lean toward the dominant emotion, mingling
+            into a shared emotional gradient that softly tints the whole sky.
           </p>
         </div>
       </section>
@@ -716,7 +949,7 @@
         </ul>
         <div class="spectrum" aria-hidden="true"></div>
         <p class="spectrum-key">
-          Joy → Surprise → Anger → Sadness → Calm → Neutral : one gradient, six readings
+          Joy → Surprise → Anger → Sadness → Calm → Neutral : six readings, one shared gradient
         </p>
       </section>
 
