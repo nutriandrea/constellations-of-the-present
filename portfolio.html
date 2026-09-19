@@ -2,17 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Constellations of the Present — World</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Constellations of the Present — About</title>
     <meta
       name="description"
       content="Constellations of the Present by Andrea Cacioppo: a shared sky built from anonymous moment-hashes. On-device sensing, no capture."
     />
-    <meta name="theme-color" content="#000000" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://constellations-of-the-present.vercel.app/portfolio.html" />
+    <meta name="theme-color" content="#030309" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Constellations of the Present — World" />
+    <meta property="og:title" content="Constellations of the Present — About" />
     <meta
       property="og:description"
       content="A shared sky built from anonymous moment-hashes. Every visitor becomes a star."
@@ -25,31 +24,22 @@
       rel="stylesheet"
     />
     <style>
-      /* =========================================================
-         CONSTELLATIONS OF THE PRESENT — "MONDO"
-         Void black · paper · single acid signal.
-         Built on current web standards only: scroll-driven
-         animations, view transitions, popover, :has(), container
-         queries, color-mix, CSS 3D. No libraries.
-         ========================================================= */
-
       @view-transition {
         navigation: auto;
       }
 
       :root {
         color-scheme: dark;
-
         --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
         --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
         --font-body: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
 
-        --void: #000000;
+        --void: #030309;
         --paper: #f2f0e9;
-        --dim: color-mix(in oklab, var(--paper) 55%, transparent);
-        --dimmer: color-mix(in oklab, var(--paper) 30%, transparent);
-        --rule: color-mix(in oklab, var(--paper) 12%, transparent);
-        --rule-soft: color-mix(in oklab, var(--paper) 6%, transparent);
+        --dim: color-mix(in oklab, var(--paper) 58%, transparent);
+        --dimmer: color-mix(in oklab, var(--paper) 32%, transparent);
+        --rule: color-mix(in oklab, var(--paper) 14%, transparent);
+        --rule-soft: color-mix(in oklab, var(--paper) 7%, transparent);
         --signal: #ceff4d;
         --violet: #8b6cff;
         --cyan: #56d6f0;
@@ -81,10 +71,6 @@
         overflow-x: hidden;
       }
 
-      body:has(#gate[data-open='true']) {
-        overflow: hidden;
-      }
-
       ::selection {
         background: var(--signal);
         color: var(--void);
@@ -94,27 +80,33 @@
         color: inherit;
       }
 
-      /* --- persistent instrument frame ------------------------ */
-      .frame {
+      /* ---------- live sky, pinned behind everything ---------- */
+      #sky {
         position: fixed;
         inset: 0;
-        z-index: 2;
+        z-index: 0;
+        display: block;
         pointer-events: none;
-        background-image:
-          linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
-          linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
-        background-size: 12.5vw 12.5vw;
-        mask-image: radial-gradient(ellipse 80% 80% at 50% 45%, #000 30%, transparent 80%);
+      }
+
+      .sky-fade {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 90% 70% at 50% 30%, transparent 40%, color-mix(in oklab, var(--void) 78%, transparent) 100%),
+          linear-gradient(to bottom, color-mix(in oklab, var(--void) 55%, transparent), transparent 22%, transparent 78%, var(--void));
       }
 
       .grain {
         position: fixed;
         inset: -50%;
-        z-index: 3;
+        z-index: 60;
         pointer-events: none;
-        opacity: 0.15;
+        opacity: 0.07;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-        animation: grain-drift 6s steps(6) infinite;
+        animation: grain-drift 7s steps(6) infinite;
       }
 
       @keyframes grain-drift {
@@ -126,135 +118,46 @@
         100% { transform: translate3d(0, 0, 0); }
       }
 
-      /* --- entry gate ----------------------------------------- */
-      #gate {
+      /* ---------- instrument frame ---------- */
+      .frame {
         position: fixed;
         inset: 0;
-        z-index: 90;
-        display: grid;
-        place-items: center;
-        background: var(--void);
-        transition: opacity 1s var(--ease), visibility 1s;
+        z-index: 2;
+        pointer-events: none;
+        background-image:
+          linear-gradient(to right, var(--rule-soft) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
+        background-size: 12.5vw 12.5vw;
+        mask-image: radial-gradient(ellipse 70% 80% at 50% 20%, #000 25%, transparent 78%);
+        opacity: 0.6;
       }
 
-      #gate[data-open='false'] {
-        opacity: 0;
-        visibility: hidden;
+      /* progress rail */
+      #progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        z-index: 55;
+        transform-origin: 0 50%;
+        transform: scaleX(0);
+        background: linear-gradient(90deg, var(--signal), var(--cyan), var(--violet));
+        will-change: transform;
       }
 
-      .gate-inner {
-        display: grid;
-        justify-items: center;
-        gap: 26px;
-        text-align: center;
-        padding: var(--gutter);
-        max-width: 46ch;
-      }
-
-      .gate-mark {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: 0.34em;
-        text-transform: uppercase;
-        color: var(--dim);
-      }
-
-      .gate-title {
-        margin: 0;
-        font-family: var(--font-display);
-        font-weight: 800;
-        font-size: clamp(2.1rem, 6vw, 4.4rem);
-        line-height: 0.88;
-        letter-spacing: -0.045em;
-        text-transform: uppercase;
-        text-wrap: balance;
-      }
-
-      .gate-title em {
-        display: block;
-        font-style: normal;
-        color: transparent;
-        -webkit-text-stroke: 1px var(--paper);
-      }
-
-      .gate-copy {
-        margin: 0;
-        color: var(--dim);
-        text-wrap: pretty;
-      }
-
-      .gate-counter {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: 0.3em;
-        color: var(--signal);
-        font-variant-numeric: tabular-nums;
-      }
-
-      /* --- buttons -------------------------------------------- */
-      .btn {
-        appearance: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        padding: 13px 28px;
-        border: 1px solid var(--rule);
-        border-radius: 999px;
-        background: transparent;
-        color: var(--paper);
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: 0.24em;
-        text-transform: uppercase;
-        text-decoration: none;
-        cursor: pointer;
-        transition:
-          border-color 0.4s var(--ease),
-          color 0.4s var(--ease),
-          background 0.4s var(--ease),
-          letter-spacing 0.5s var(--ease);
-      }
-
-      .btn:hover,
-      .btn:focus-visible {
-        border-color: var(--signal);
-        color: var(--signal);
-        letter-spacing: 0.32em;
-        outline: none;
-      }
-
-      .btn--solid {
-        background: var(--signal);
-        border-color: var(--signal);
-        color: var(--void);
-      }
-
-      .btn--solid:hover,
-      .btn--solid:focus-visible {
-        color: var(--void);
-        background: color-mix(in oklab, var(--signal) 82%, var(--paper));
-      }
-
-      .btn--quiet {
-        border: 0;
-        padding: 6px 0;
-        border-bottom: 1px solid var(--rule);
-        border-radius: 0;
-        color: var(--dim);
-      }
-
-      /* --- masthead ------------------------------------------- */
+      /* ---------- masthead ---------- */
       .masthead {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        z-index: 40;
+        z-index: 50;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
-        padding: 22px var(--gutter);
+        padding: 20px var(--gutter);
         font-family: var(--font-mono);
         font-size: 10px;
         letter-spacing: 0.22em;
@@ -264,9 +167,8 @@
 
       .masthead a {
         text-decoration: none;
-        color: var(--paper);
         opacity: 0.75;
-        transition: opacity 0.3s var(--ease);
+        transition: opacity 0.35s var(--ease);
       }
 
       .masthead a:hover {
@@ -275,249 +177,145 @@
 
       .masthead nav {
         display: flex;
-        gap: 26px;
+        gap: clamp(14px, 2.4vw, 34px);
       }
 
       @media (max-width: 720px) {
-        .masthead nav {
-          display: none;
-        }
+        .masthead nav { display: none; }
       }
 
-      .menu-btn {
-        border: 1px solid var(--rule);
-        border-radius: 999px;
-        background: transparent;
-        color: var(--paper);
-        width: 38px;
-        height: 38px;
-        display: grid;
-        place-items: center;
-        cursor: pointer;
-        font-size: 12px;
-        letter-spacing: 0.1em;
+      .dot {
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        margin-right: 9px;
+        vertical-align: 1px;
+        background: var(--signal);
+        box-shadow: 0 0 8px var(--signal);
+        animation: live-pulse 2.4s var(--ease) infinite;
       }
 
-      #menu {
-        border: 1px solid var(--rule);
-        border-radius: 18px;
-        background: color-mix(in oklab, var(--void) 82%, transparent);
-        backdrop-filter: blur(18px);
-        color: var(--paper);
-        padding: 22px;
-        margin: 0;
-        position: fixed;
-        inset: auto var(--gutter) auto auto;
-        top: 74px;
-        min-width: 240px;
+      @keyframes live-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.7); }
       }
 
-      #menu:popover-open {
-        animation: pop 0.4s var(--ease);
-      }
-
-      @keyframes pop {
-        from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-      }
-
-      #menu ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 2px;
-      }
-
-      #menu a {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--rule-soft);
-        text-decoration: none;
-        font-family: var(--font-display);
-        font-size: 1.25rem;
-        letter-spacing: -0.02em;
-      }
-
-      #menu a span {
-        font-family: var(--font-mono);
-        font-size: 9px;
-        letter-spacing: 0.2em;
-        color: var(--dimmer);
-        align-self: center;
-      }
-
-      /* --- the orb -------------------------------------------- */
-      .world {
+      /* ---------- hero ---------- */
+      .hero {
         position: relative;
+        z-index: 3;
         min-height: 100svh;
         display: grid;
         place-items: center;
-        perspective: 2400px;
-        touch-action: pan-y;
-        overflow: clip;
-      }
-
-      .orb {
-        position: relative;
-        width: min(62vmin, 620px);
-        aspect-ratio: 1;
-        transform-style: preserve-3d;
-        transform: rotateX(-12deg) rotateY(var(--spin, 0deg));
-        will-change: transform;
-        translate: clamp(0px, 9vw, 150px) -4vh;
-      }
-
-      .orb::after {
-        content: '';
-        position: absolute;
-        inset: 12%;
-        border-radius: 50%;
-        background: radial-gradient(circle at 42% 36%, color-mix(in oklab, var(--violet) 22%, transparent), transparent 62%);
-        filter: blur(42px);
-        transform: translateZ(-160px);
-      }
-
-      .ring {
-        position: absolute;
-        inset: 0;
-        border: 1px solid color-mix(in oklab, var(--paper) 13%, transparent);
-        border-radius: 50%;
-        transform: rotateY(calc(var(--i) * 15deg));
-      }
-
-      .ring--lat {
-        inset: auto 0;
-        top: 50%;
-        height: 0;
-        transform: translateY(calc(var(--o) * 1px)) rotateX(90deg) scale(var(--s));
-      }
-
-      .node-anchor {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: clamp(110px, 13vw, 190px);
-        aspect-ratio: 4 / 3;
-        margin: 0;
-        transform-style: preserve-3d;
-        transform: translate(-50%, -50%) rotateY(var(--ry)) rotateX(var(--rx))
-          translateZ(var(--tz, 300px));
-      }
-
-      .node {
-        position: absolute;
-        inset: 0;
-        margin: 0;
-        padding: 14px;
-        display: grid;
-        place-content: center;
-        gap: 6px;
         text-align: center;
-        border: 1px solid var(--rule);
-        background: color-mix(in oklab, var(--void) 62%, transparent);
-        backdrop-filter: blur(3px);
-        transform: rotateY(calc((var(--ry) + var(--spin, 0deg)) * -1)) rotateX(12deg)
-          translateY(var(--dy, 0px));
-        transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+        padding: 0 var(--gutter);
       }
 
-      .node::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--tint, var(--violet)) 45%, transparent), transparent 60%),
-          radial-gradient(circle at 75% 80%, color-mix(in oklab, var(--tint, var(--violet)) 22%, transparent), transparent 65%);
-        opacity: 0.75;
-        mix-blend-mode: screen;
+      .hero-inner {
+        display: grid;
+        justify-items: center;
+        gap: clamp(22px, 4vh, 40px);
       }
 
-      .node:hover {
-        border-color: var(--signal);
-        background: color-mix(in oklab, var(--void) 40%, transparent);
-      }
-
-      .node b {
-        position: relative;
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: clamp(0.85rem, 1.3vw, 1.15rem);
-        letter-spacing: -0.02em;
-        line-height: 1.05;
-      }
-
-      .node span {
-        position: relative;
-        font-family: var(--font-mono);
-        font-size: 8px;
-        letter-spacing: 0.24em;
-        text-transform: uppercase;
-        color: var(--dim);
-      }
-
-      .world-title {
-        position: absolute;
-        left: var(--gutter);
-        bottom: clamp(90px, 12vh, 150px);
-        z-index: 5;
+      .hero-mark {
         margin: 0;
-        max-width: min(46vw, 560px);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: var(--signal);
+        opacity: 0;
+        animation: rise 1s var(--ease) 0.2s forwards;
+      }
+
+      .hero-title {
+        margin: 0;
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: clamp(2.2rem, 6.8vw, 6.4rem);
-        line-height: 0.84;
-        letter-spacing: -0.05em;
+        font-size: clamp(2.6rem, 9.5vw, 9rem);
+        line-height: 0.82;
+        letter-spacing: -0.055em;
         text-transform: uppercase;
-        mix-blend-mode: difference;
-        pointer-events: none;
+        text-wrap: balance;
       }
 
-      .world-title em {
+      .hero-title > span {
         display: block;
-        font-style: normal;
-        color: transparent;
-        -webkit-text-stroke: 1px var(--paper);
+        overflow: hidden;
+        padding-bottom: 0.06em;
+        margin-bottom: -0.06em;
       }
 
-      .world-meta {
-        position: absolute;
-        right: var(--gutter);
-        bottom: clamp(90px, 12vh, 150px);
-        z-index: 5;
-        text-align: right;
-        font-family: var(--font-mono);
-        font-size: 9px;
-        letter-spacing: 0.22em;
-        text-transform: uppercase;
+      .hero-title > span > span {
+        display: inline-block;
+        transform: translateY(110%);
+        animation: rise 1.1s var(--ease) forwards;
+      }
+
+      .hero-title > span:nth-child(2) > span { animation-delay: 0.12s; }
+      .hero-title > span:nth-child(2) { color: transparent; -webkit-text-stroke: 1px var(--paper); }
+      .hero-title > span:nth-child(3) > span { animation-delay: 0.24s; }
+
+      @keyframes rise {
+        to { transform: none; opacity: 1; }
+      }
+      .hero-title > span > span { opacity: 0; }
+
+      .hero-sub {
+        margin: 0;
+        max-width: 52ch;
         color: var(--dim);
-        display: grid;
-        gap: 6px;
+        text-wrap: pretty;
+        opacity: 0;
+        animation: rise 1s var(--ease) 0.5s forwards;
       }
 
-      .drag-hint {
+      .hero-code {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: var(--dimmer);
+        opacity: 0;
+        animation: rise 1s var(--ease) 0.7s forwards;
+      }
+
+      #moment-hash {
+        font-variant-numeric: tabular-nums;
+        color: var(--cyan);
+        text-shadow: 0 0 14px color-mix(in oklab, var(--cyan) 55%, transparent);
+      }
+
+      .scroll-hint {
         position: absolute;
+        bottom: 30px;
         left: 50%;
-        bottom: 34px;
         transform: translateX(-50%);
-        z-index: 5;
         font-family: var(--font-mono);
         font-size: 9px;
         letter-spacing: 0.3em;
         text-transform: uppercase;
         color: var(--dimmer);
+        animation: bob 2.6s var(--ease) infinite;
+        opacity: 0;
+        animation-name: rise, bob;
+        animation-delay: 1s, 2.4s;
+        animation-duration: 1s, 2.4s;
+        animation-fill-mode: forwards, infinite;
       }
 
-      @media (max-width: 720px) {
-        .world-title { max-width: none; right: var(--gutter); bottom: 130px; }
-        .world-meta { display: none; }
+      @keyframes bob {
+        0%, 100% { transform: translate(-50%, 0); }
+        50% { transform: translate(-50%, 8px); }
       }
 
-      /* --- editorial sections --------------------------------- */
+      /* ---------- sections ---------- */
       main {
         position: relative;
-        z-index: 4;
+        z-index: 3;
       }
 
       section {
@@ -542,6 +340,7 @@
       }
 
       .sec-num {
+        margin: 0;
         font-family: var(--font-mono);
         font-size: 9px;
         letter-spacing: 0.3em;
@@ -568,15 +367,18 @@
         text-wrap: pretty;
       }
 
+      .lede em {
+        font-style: normal;
+        color: var(--paper);
+      }
+
       .cols {
         display: grid;
         gap: clamp(24px, 3vw, 46px);
       }
 
       @container (min-width: 780px) {
-        .cols {
-          grid-template-columns: repeat(3, 1fr);
-        }
+        .cols { grid-template-columns: repeat(3, 1fr); }
       }
 
       .card {
@@ -585,13 +387,15 @@
         display: grid;
         gap: 10px;
         align-content: start;
+        position: relative;
       }
 
-      .card i {
+      .card .lg {
         width: 7px;
         height: 7px;
         background: var(--tint, var(--signal));
-        font-style: normal;
+        border-radius: 50%;
+        box-shadow: 0 0 12px var(--tint, var(--signal));
       }
 
       .card h3 {
@@ -608,7 +412,6 @@
         font-size: 0.95rem;
       }
 
-      /* stack list */
       .stack {
         list-style: none;
         margin: 0;
@@ -648,14 +451,7 @@
       .spectrum {
         height: 1px;
         margin-top: 46px;
-        background: linear-gradient(
-          90deg,
-          var(--signal),
-          var(--rose),
-          var(--violet),
-          var(--cyan),
-          var(--signal)
-        );
+        background: linear-gradient(90deg, var(--signal), var(--rose), var(--violet), var(--cyan), var(--signal));
         opacity: 0.7;
       }
 
@@ -668,7 +464,6 @@
         color: var(--dimmer);
       }
 
-      /* author */
       .author {
         display: grid;
         gap: clamp(28px, 4vw, 60px);
@@ -700,7 +495,6 @@
         color: var(--dimmer);
       }
 
-      /* outro */
       .outro {
         min-height: 86svh;
         display: grid;
@@ -711,14 +505,45 @@
       }
 
       .outro h2 {
-        font-size: clamp(2.2rem, 9vw, 7.5rem);
+        font-size: clamp(2.4rem, 10vw, 8rem);
         font-weight: 800;
         text-transform: uppercase;
-        line-height: 0.85;
+        line-height: 0.82;
         letter-spacing: -0.05em;
       }
 
+      .btn {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 28px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--void) 40%, transparent);
+        backdrop-filter: blur(6px);
+        color: var(--paper);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: pointer;
+        transition: border-color 0.4s var(--ease), color 0.4s var(--ease), background 0.4s var(--ease), letter-spacing 0.5s var(--ease), box-shadow 0.4s var(--ease);
+      }
+
+      .btn:hover,
+      .btn:focus-visible {
+        border-color: var(--signal);
+        color: var(--signal);
+        letter-spacing: 0.32em;
+        outline: none;
+        box-shadow: 0 0 34px color-mix(in oklab, var(--signal) 30%, transparent);
+      }
+
       footer.site {
+        position: relative;
+        z-index: 3;
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -732,49 +557,14 @@
         color: var(--dimmer);
       }
 
-      /* --- scroll-driven reveals (progressive enhancement) ---- */
-      @supports (animation-timeline: view()) {
-        @media (prefers-reduced-motion: no-preference) {
-          .reveal {
-            animation: reveal linear both;
-            animation-timeline: view();
-            animation-range: entry 8% cover 34%;
-          }
-
-          .sec-num {
-            animation: rule-in linear both;
-            animation-timeline: view();
-            animation-range: entry 10% cover 30%;
-          }
-        }
-      }
-
-      @keyframes reveal {
-        from {
-          opacity: 0;
-          transform: translateY(38px);
-          filter: blur(6px);
-        }
-        to {
-          opacity: 1;
-          transform: none;
-          filter: none;
-        }
-      }
-
-      @keyframes rule-in {
-        from { opacity: 0; letter-spacing: 0.6em; }
-        to { opacity: 1; letter-spacing: 0.3em; }
-      }
-
-      /* --- custom cursor -------------------------------------- */
+      /* ---------- cursor ---------- */
       #cursor {
         position: fixed;
         top: 0;
         left: 0;
         z-index: 80;
-        width: 26px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
         border: 1px solid var(--paper);
         border-radius: 50%;
         pointer-events: none;
@@ -789,115 +579,73 @@
         #cursor { opacity: 1; }
       }
 
+      /* ---------- scroll-driven reveals ---------- */
+      @supports (animation-timeline: view()) {
+        @media (prefers-reduced-motion: no-preference) {
+          .reveal {
+            animation: reveal linear both;
+            animation-timeline: view();
+            animation-range: entry 8% cover 34%;
+          }
+        }
+      }
+
+      @keyframes reveal {
+        from { opacity: 0; transform: translateY(38px); filter: blur(6px); }
+        to { opacity: 1; transform: none; filter: none; }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
         .grain { animation: none; }
-        .orb { transition: none; }
+        .hero-title > span > span,
+        .hero-mark,
+        .hero-sub,
+        .hero-code,
+        .scroll-hint { animation: none; opacity: 1; transform: none; }
       }
     </style>
   </head>
 
   <body>
+    <canvas id="sky" aria-hidden="true"></canvas>
+    <div class="sky-fade" aria-hidden="true"></div>
     <div class="frame" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    <div id="progress" aria-hidden="true"></div>
     <div id="cursor" aria-hidden="true"></div>
 
-    <!-- ENTRY GATE -->
-    <div id="gate" data-open="true">
-      <div class="gate-inner">
-        <p class="gate-mark">Interactive web artwork · MMXXVI</p>
-        <h1 class="gate-title">Constellations<em>of the Present</em></h1>
-        <p class="gate-copy">
-          A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever leaves the device.
-        </p>
-        <button class="btn btn--solid" id="gate-enter" type="button">Enter the world</button>
-        <p class="gate-counter" id="gate-counter">000</p>
-      </div>
-    </div>
-
-    <!-- MASTHEAD -->
     <header class="masthead">
-      <a href="/portfolio.html">COTP / Observatory</a>
+      <a href="./">COTP / Observatory</a>
       <nav>
         <a href="#concept">Concept</a>
         <a href="#privacy">Privacy</a>
         <a href="#technical">Technical</a>
         <a href="#author">Author</a>
+        <a href="./">Enter the sky</a>
       </nav>
-      <button class="menu-btn" type="button" popovertarget="menu" aria-label="Open the menu">···</button>
     </header>
 
-    <div id="menu" popover>
-      <ul>
-        <li><a href="#concept">Concept <span>01</span></a></li>
-        <li><a href="#privacy">Privacy <span>02</span></a></li>
-        <li><a href="#technical">Technical <span>03</span></a></li>
-        <li><a href="#author">Author <span>04</span></a></li>
-        <li><a href="/">Enter the sky <span>↗</span></a></li>
-      </ul>
-    </div>
-
-    <!-- THE WORLD -->
-    <div class="world" id="world">
-      <div class="orb" id="orb" aria-hidden="true">
-        <div class="ring" style="--i: 0"></div>
-        <div class="ring" style="--i: 1"></div>
-        <div class="ring" style="--i: 2"></div>
-        <div class="ring" style="--i: 3"></div>
-        <div class="ring" style="--i: 4"></div>
-        <div class="ring" style="--i: 5"></div>
-        <div class="ring ring--lat" style="--o: -260; --s: 0.55"></div>
-        <div class="ring ring--lat" style="--o: -170; --s: 0.82"></div>
-        <div class="ring ring--lat" style="--o: -60; --s: 0.98"></div>
-        <div class="ring ring--lat" style="--o: 60; --s: 0.98"></div>
-        <div class="ring ring--lat" style="--o: 170; --s: 0.82"></div>
-        <div class="ring ring--lat" style="--o: 260; --s: 0.55"></div>
-
-        <div class="node-anchor" style="--ry: 10deg; --rx: 0deg; --tz: 320px; --dy: -120px">
-          <figure class="node" style="--tint: var(--violet)">
-            <b>Moment-hash</b>
-            <span>SHA-256 · nonce</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 82deg; --rx: 0deg; --tz: 320px; --dy: 78px">
-          <figure class="node" style="--tint: var(--cyan)">
-            <b>On-device</b>
-            <span>MediaPipe</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 154deg; --rx: 0deg; --tz: 320px; --dy: -52px">
-          <figure class="node" style="--tint: var(--rose)">
-            <b>Shared sky</b>
-            <span>Realtime</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 226deg; --rx: 0deg; --tz: 320px; --dy: 120px">
-          <figure class="node" style="--tint: var(--signal)">
-            <b>No capture</b>
-            <span>Zero raw data</span>
-          </figure>
-        </div>
-        <div class="node-anchor" style="--ry: 298deg; --rx: 0deg; --tz: 320px; --dy: -96px">
-          <figure class="node" style="--tint: var(--violet)">
-            <b>Live presence</b>
-            <span>Short TTL</span>
-          </figure>
-        </div>
+    <div class="hero">
+      <div class="hero-inner">
+        <p class="hero-mark"><span class="dot" aria-hidden="true"></span>Interactive web artwork · MMXXVI</p>
+        <h1 class="hero-title" aria-label="Constellations of the Present">
+          <span><span>Constellations</span></span>
+          <span><span>of the present</span></span>
+        </h1>
+        <p class="hero-sub">
+          A shared sky built from anonymous moment-hashes. Every visitor becomes a star — and nothing raw ever
+          leaves the device.
+        </p>
+        <p class="hero-code">
+          <span>local moment-hash</span>
+          <span id="moment-hash">………………</span>
+        </p>
       </div>
-
-      <h2 class="world-title">The world<em>of the present</em></h2>
-
-      <div class="world-meta">
-        <span>Lat — / Lon — / Local time</span>
-        <span>Andrea Cacioppo · Milan</span>
-        <span id="live-clock">--:--:--</span>
-      </div>
-
-      <p class="drag-hint">Drag to rotate</p>
+      <p class="scroll-hint">Scroll — the sky reacts</p>
     </div>
 
     <main>
-      <!-- 01 CONCEPT -->
       <section id="concept">
         <div class="sec-head">
           <p class="sec-num">01 / Concept</p>
@@ -905,15 +653,18 @@
         </div>
         <div class="reveal">
           <p class="lede">
-            The same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds that surface for the network age: a collective sky that exists only in the living present, built from moments instead of profiles.
+            The same stars for everyone, everywhere. <em>Constellations of the Present</em> rebuilds that surface
+            for the network age: a collective sky that exists only in the living present, built from moments instead
+            of profiles.
           </p>
           <p class="lede">
-            Each visitor’s presence is sensed entirely on their own device. The camera reads expression, attention and engagement in real time; the reading is quantised and immediately reduced to a non-reversible hash — a "moment-hash" — with a random nonce. Only that anonymous code leaves the device.
+            Each visitor's presence is sensed entirely on their own device. The camera reads expression, attention
+            and engagement in real time; the reading is quantised and immediately reduced to a non-reversible hash —
+            a "moment-hash" — with a random nonce. Only that anonymous code leaves the device.
           </p>
         </div>
       </section>
 
-      <!-- 02 PRIVACY -->
       <section id="privacy">
         <div class="sec-head">
           <p class="sec-num">02 / Privacy</p>
@@ -921,30 +672,32 @@
         </div>
         <div class="cols reveal">
           <article class="card" style="--tint: var(--cyan)">
-            <i></i>
+            <i class="lg" aria-hidden="true"></i>
             <h3>On-device sensing</h3>
             <p>
-              Face tracking runs entirely in the browser and is discarded frame by frame. No image or video ever leaves the device.
+              Face tracking runs entirely in the browser and is discarded frame by frame. No image or video ever
+              leaves the device.
             </p>
           </article>
           <article class="card" style="--tint: var(--violet)">
-            <i></i>
+            <i class="lg" aria-hidden="true"></i>
             <h3>Moment-hash</h3>
             <p>
-              Quantised expression and engagement values are hashed with a random nonce. The result is anonymous and non-reversible.
+              Quantised expression and engagement values are hashed with a random nonce. The result is anonymous
+              and non-reversible.
             </p>
           </article>
           <article class="card" style="--tint: var(--rose)">
-            <i></i>
+            <i class="lg" aria-hidden="true"></i>
             <h3>Opt-in audio only</h3>
             <p>
-              The microphone feeds only a live audio level into an ambient drone. It never records, never transmits, never leaves the browser.
+              The microphone feeds only a live audio level into an ambient drone. It never records, never transmits,
+              never leaves the browser.
             </p>
           </article>
         </div>
       </section>
 
-      <!-- 03 TECHNICAL -->
       <section id="technical">
         <div class="sec-head">
           <p class="sec-num">03 / Technical</p>
@@ -966,7 +719,6 @@
         </p>
       </section>
 
-      <!-- 04 AUTHOR -->
       <section id="author">
         <div class="sec-head">
           <p class="sec-num">04 / Author</p>
@@ -978,18 +730,19 @@
             <footer>Andrea Cacioppo — MMXXVI</footer>
           </blockquote>
           <p class="lede">
-            Italian designer and creative developer based in Milan, studying at Politecnico di Milano. His practice sits at the intersection of interaction design, creative code and privacy-by-design, exploring how networked systems can create intimacy and collectivity without surveillance.
+            Italian designer and creative developer based in Milan, studying at Politecnico di Milano. His practice
+            sits at the intersection of interaction design, creative code and privacy-by-design, exploring how
+            networked systems can create intimacy and collectivity without surveillance.
           </p>
         </div>
       </section>
 
-      <!-- OUTRO -->
       <section class="outro">
         <h2 class="reveal">Look up.</h2>
         <p class="lede reveal" style="max-width: 46ch">
           Your star appears only while you are present — and disappears the moment you look away.
         </p>
-        <a class="btn btn--solid reveal" href="/">Enter the sky</a>
+        <a class="btn reveal" href="./">Enter the sky</a>
       </section>
     </main>
 
@@ -1002,95 +755,221 @@
     <script type="module">
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      /* ---- entry gate with a short count-in ---- */
-      const gate = document.getElementById('gate');
-      const counter = document.getElementById('gate-counter');
-      let n = 0;
-      const tick = setInterval(() => {
-        n = Math.min(100, n + Math.ceil(Math.random() * 9));
-        counter.textContent = String(n).padStart(3, '0');
-        if (n >= 100) clearInterval(tick);
-      }, 90);
+      /* =========================================================
+         LIVE SKY — deterministic constellation on canvas.
+         Stars are seeded from an index, so they never move on
+         reload. The pointer pulls nearby stars; scroll adds wind;
+         a random star supernovas now and then. Every observed
+         gesture is folded into a local "moment-hash".
+         ========================================================= */
+      const canvas = document.getElementById('sky');
+      const ctx = canvas.getContext('2d');
+      const DPR = Math.min(devicePixelRatio || 1, 2);
 
-      document.getElementById('gate-enter').addEventListener('click', () => {
-        gate.dataset.open = 'false';
-        clearInterval(tick);
-      });
+      const MAX_STARS = reduced ? 70 : 190;
+      const LINK_RANGE = 150;
+      const POINTER_RANGE = 190;
+      const SPARK_CHANCE = 0.04;
 
-      /* ---- orb: idle spin + pointer drag, one rAF loop ---- */
-      const orb = document.getElementById('orb');
-      const world = document.getElementById('world');
-      let spin = 0;
-      let velocity = reduced ? 0 : 0.035;
-      let dragging = false;
-      let lastX = 0;
+      let W = 0;
+      let H = 0;
+      let px = -9999;
+      let py = -9999;
+      let pvx = 0;
+      let pvy = 0;
+      let windX = 0;
+      let lastScrollY = 0;
+      let t = 0;
 
-      world.addEventListener('pointerdown', (e) => {
-        dragging = true;
-        lastX = e.clientX;
-        world.setPointerCapture(e.pointerId);
-      });
+      const palette = ['#f2f0e9', '#ceff4d', '#8b6cff', '#56d6f0', '#ff7aa8'];
 
-      world.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const dx = e.clientX - lastX;
-        lastX = e.clientX;
-        spin += dx * 0.22;
-        velocity = dx * 0.05;
-      });
-
-      const release = () => {
-        dragging = false;
-      };
-      world.addEventListener('pointerup', release);
-      world.addEventListener('pointercancel', release);
-
-      const idle = reduced ? 0 : 0.035;
-      const anchors = [...document.querySelectorAll('.node-anchor')].map((el) => ({
-        el,
-        card: el.querySelector('.node'),
-        ry: parseFloat(getComputedStyle(el).getPropertyValue('--ry')),
-      }));
-
-      function frame() {
-        if (!dragging) {
-          velocity += (idle - velocity) * 0.04;
-          spin += velocity;
-        }
-        orb.style.setProperty('--spin', spin.toFixed(2) + 'deg');
-
-        // depth cue: nodes on the far side of the sphere recede
-        for (const a of anchors) {
-          const facing = Math.cos(((a.ry + spin) * Math.PI) / 180);
-          // opacity must live on the leaf: setting it on the anchor would
-          // flatten its preserve-3d context and collapse the billboard
-          a.card.style.opacity = (0.14 + 0.86 * ((facing + 1) / 2) ** 1.6).toFixed(3);
-          a.el.style.zIndex = String(Math.round(facing * 100));
-        }
-        requestAnimationFrame(frame);
+      function rand(seed) {
+        let a = seed % 2147483647;
+        if (a <= 0) a += 2147483646;
+        return () => {
+          a = (a * 16807) % 2147483647;
+          return (a - 1) / 2147483646;
+        };
       }
-      requestAnimationFrame(frame);
 
-      /* ---- local clock, the work is about the present ---- */
-      const clock = document.getElementById('live-clock');
-      const setClock = () => {
-        clock.textContent = new Date().toLocaleTimeString('en-GB');
-      };
-      setClock();
-      setInterval(setClock, 1000);
+      function resize() {
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      }
 
-      /* ---- custom cursor ---- */
+      const stars = [];
+      function seedStars() {
+        stars.length = 0;
+        const rng = rand(20260801);
+        const depth = (i) => 0.45 + 0.55 * ((i * 37) % 100) / 100;
+        for (let i = 0; i < MAX_STARS; i++) {
+          const z = depth(i);
+          stars.push({
+            bx: rng() * W,
+            by: rng() * H,
+            x: rng() * W,
+            y: rng() * H,
+            vx: 0,
+            vy: 0,
+            r: 0.4 + rng() * 1.6,
+            z,
+            phase: rng() * Math.PI * 2,
+            speed: 0.4 + rng() * 1.2,
+            color: palette[i % palette.length],
+            faint: rng() < 0.72,
+          });
+        }
+      }
+
+      function step(now) {
+        for (const s of stars) {
+          const dx = s.x - s.bx;
+          const dy = s.y - s.by;
+          const spring = 0.012 * s.z;
+          s.vx -= dx * spring;
+          s.vy -= dy * spring;
+
+          const pdx = s.x - px;
+          const pdy = s.y - py;
+          const pd2 = pdx * pdx + pdy * pdy;
+          if (pd2 < POINTER_RANGE * POINTER_RANGE && pd2 > 1) {
+            const d = Math.sqrt(pd2);
+            const f = (1 - d / POINTER_RANGE) * 0.42 * s.z;
+            s.vx += (pdx / d) * f;
+            s.vy += (pdy / d) * f;
+          }
+
+          s.vx += windX * (0.5 - s.z) * 0.06;
+          s.vx *= 0.86;
+          s.vy *= 0.86;
+
+          s.x += s.vx;
+          s.y += s.vy;
+
+          if (s.x < -40) s.bx += W + 80;
+          if (s.x > W + 40) s.bx -= W + 80;
+          if (s.y < -40) s.by += H + 80;
+          if (s.y > H + 40) s.by -= H + 80;
+        }
+        windX *= 0.92;
+        if (!reduced) t += 0.016;
+      }
+
+      function draw(now) {
+        ctx.clearRect(0, 0, W, H);
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        for (let i = 0; i < stars.length; i++) {
+          const a = stars[i];
+          for (let j = i + 1; j < stars.length; j++) {
+            const b = stars[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > LINK_RANGE * LINK_RANGE) continue;
+            const d = Math.sqrt(d2);
+            const alpha = (1 - d / LINK_RANGE) * 0.12 * ((a.z + b.z) / 2);
+            ctx.strokeStyle = `rgba(242,240,233,${alpha.toFixed(3)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x + a.vx * 3, a.y + a.vy * 3);
+            ctx.lineTo(b.x + b.vx * 3, b.y + b.vy * 3);
+            ctx.stroke();
+          }
+        }
+
+        for (const s of stars) {
+          const tw = 0.5 + 0.5 * Math.sin(s.phase + now * 0.001 * s.speed);
+          const bright = tw * (0.7 + 0.3 * (1 - s.faint));
+          const r = s.r * (1 + tw * 0.5);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = Math.min(1, bright * (0.5 + 0.5 * s.z));
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      function loop(now) {
+        step(now);
+        draw(now);
+        if (!reduced) requestAnimationFrame(loop);
+      }
+
+      window.addEventListener('pointermove', (e) => {
+        const nx = e.clientX;
+        const ny = e.clientY;
+        pvx = (nx - px) * 0.9;
+        pvy = (ny - py) * 0.9;
+        px = nx;
+        py = ny;
+      });
+
+      window.addEventListener('scroll', () => {
+        const dy = window.scrollY - lastScrollY;
+        lastScrollY = window.scrollY;
+        windX = dy * 0.18;
+        document.getElementById('progress').style.transform = `scaleX(${
+          window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
+        })`;
+      }, { passive: true });
+
+      resize();
+      seedStars();
+      if (reduced) {
+        step(0);
+        draw(0);
+      } else {
+        requestAnimationFrame(loop);
+      }
+      window.addEventListener('resize', () => { resize(); seedStars(); });
+
+      /* ---- local moment-hash: the page hashes the present ---- */
+      const hashEl = document.getElementById('moment-hash');
+      let hashSeed = (Date.now() % 100000);
+      function mixHashes(seed, x, y) {
+        let h = (seed >>> 0) ^ (x * 2654435761) ^ ((y << 7) >>> 0);
+        h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+        h ^= h >>> 13;
+        h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+        return h >>> 0;
+      }
+
+      let shown = '',
+          target = '.'.repeat(hashEl.textContent.length || 14);
+      function hexOf(h) { return h.toString(16).padStart(8, '0'); }
+      function hashTick() {
+        hashSeed = mixHashes(hashSeed, px + pvx | 0, py + pvy | 0);
+        const h1 = hexOf(hashSeed);
+        const h2 = hexOf(mixHashes(hashSeed, pvx | 0, pvy | 0));
+        target = (h1 + h2).slice(0, 14);
+        shown = '';
+        for (let i = 0; i < target.length; i++) {
+          shown += t % 2 === 0 ? target[i] : (Math.random() < 0.35 ? '…' : target[i]);
+        }
+        hashEl.textContent = shown;
+      }
+      window.addEventListener('pointermove', () => hashTick(), { passive: true });
+      setInterval(hashTick, 500);
+
+      /* ---- cursor ---- */
       const cursor = document.getElementById('cursor');
       addEventListener('pointermove', (e) => {
         cursor.style.setProperty('--x', e.clientX + 'px');
         cursor.style.setProperty('--y', e.clientY + 'px');
       });
       addEventListener('pointerover', (e) => {
-        const interactive = e.target.closest('a, button, .node, .stack li');
-        cursor.style.setProperty('--k', interactive ? '2.2' : '1');
+        const interactive = e.target.closest('a, .btn, .stack li');
+        cursor.style.setProperty('--k', interactive ? '2.4' : '1');
       });
 
-      /* ---- reveal fallback where scroll-driven CSS is missing ---- */
+      /* ---- reveal fallback ---- */
       if (!CSS.supports('animation-timeline: view()') && !reduced) {
         const io = new IntersectionObserver(
           (entries) => {
@@ -1110,6 +989,9 @@
         );
         document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
       }
+
+      // Boot the hash on arrival, even before the first move.
+      hashTick();
     </script>
   </body>
 </html>
